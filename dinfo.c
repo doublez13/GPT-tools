@@ -54,15 +54,49 @@ void getSecondaryHeader(char* header, FILE *deviceFile){
 
 //Keep working on this later
 //What type should we store the data in?
-//void getGPGFields(char* GPTHeader){
-//  char signature[9];
-//  char revision[5];
-//
-//  strncpy(signature, GPTHeader, 8);
-//  strncpy(revision, GPTHeader+8, 4);
-// 
-//  printf("%s\n", revision);
-//}
+void getGPTFields(char* GPTHeader){
+  char signature[9];
+  int revision;
+  int headerSize;
+  int crc32;
+  int reserved;
+  long long LBA1, LBA2;
+  long long LBApart, LBApartLast;
+  char GUID[17];
+
+  strncpy(signature, GPTHeader, 8);
+  GPTHeader += 8;
+  
+  memcpy(&revision, GPTHeader, 4);
+  GPTHeader += 4;
+
+  memcpy(&headerSize, GPTHeader, 4);
+  GPTHeader += 4;
+
+  memcpy(&crc32, GPTHeader, 4);
+  GPTHeader += 4;
+
+  memcpy(&reserved, GPTHeader, 4);
+  GPTHeader += 4;
+
+  memcpy(&LBA1, GPTHeader, 8);
+  GPTHeader += 8;
+
+  memcpy(&LBA2, GPTHeader, 8);
+  GPTHeader += 8;
+
+  memcpy(&LBApart, GPTHeader, 8);
+  GPTHeader += 8;
+
+  memcpy(&LBApartLast, GPTHeader, 8);
+  GPTHeader += 8;
+
+  memcpy(&GUID, GPTHeader, 16);
+  GPTHeader += 16;
+
+ 
+  printf("%s\n", GUID);
+}
 
 
 
@@ -138,6 +172,6 @@ int main(){
   
   
 
-  //getGPGFields(GPTHeader);  
+  getGPTFields(GPTHeader1);  
   return 0;
 }
