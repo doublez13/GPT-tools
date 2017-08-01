@@ -19,21 +19,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 
 #define HEADER_SIZE 512
-
+#define LBA_SIZE 512
 
 struct GPTHeader{
-  char signature[8];
-  char revision[4];
-  unsigned int headerSize; //92 in most cases. 512-92 is just 0s
-  unsigned int crc32;
-  unsigned int reserved;
-  unsigned long long LBA1, LBA2;
-  unsigned long long LBApart, LBApartLast;
-  char GUID[16];
-  char LBAstart[8];
-  unsigned int numParts;
-  unsigned int singleSize;
-  unsigned int crc32Part;
+  char               signature[8];
+  char               revision[4];
+  unsigned int       headerSize;   //92 in most cases. 512-92 is just 0s
+  unsigned int       crc32;        //different for primary and backup
+  unsigned int       reserved;
+  unsigned long long LBA1, LBA2;   //swapped for backup
+  unsigned long long LBApart, LBApartLast; //different for primary and backup
+  char               GUID[16];
+  unsigned long long LBAstart;     //LBA of partition entries. Different on Pr and Ba
+  unsigned int       numParts;
+  unsigned int       singleSize;
+  unsigned int       crc32Part;
 };
 
 
@@ -42,7 +42,7 @@ struct GPTHeader{
 //This function checks both the default and
 //backup GPT headers.
 int isGPT(FILE *deviceFile){
-  int offset = 512;
+  int offset = LBA_SIZE;
   char gptSig[9] = "EFI PART";
   char diskSig[9];
   diskSig[8] = '\0';
@@ -67,9 +67,7 @@ int isGPT(FILE *deviceFile){
 
 
 void getPrimaryHeader(char* header, FILE *deviceFile){
-  int offset = 512;
-  
-  fseek( deviceFile, offset, SEEK_SET );  
+  fseek( deviceFile, LBA_SIZE, SEEK_SET );  
   fread(header, 1, HEADER_SIZE, deviceFile);
 }
 
@@ -113,7 +111,7 @@ void readGPT(struct GPTHeader *header, char* GPTHeader){
   memcpy( &(*header).LBAstart,    GPTHeader + 72,  8 );
   memcpy( &(*header).numParts,    GPTHeader + 80,  4 );
   memcpy( &(*header).singleSize,  GPTHeader + 84,  4 );
-  memcpy( &(*header).crc32Part,   GPTHeader + 88,  4 ); 
+  memcpy( &(*header).crc32Part,   GPTHeader + 88,  4 );
 }
 
 
@@ -121,7 +119,7 @@ void readGPT(struct GPTHeader *header, char* GPTHeader){
 //This does not alter the partition table
 //Returns 0 on clean write, -1 on failure
 int writeCharGPT(char *srcHeader, FILE *deviceFile){
-  long offset = 512;
+  long offset = LBA_SIZE;
   int ret1, ret2;
 
   fseek( deviceFile, offset , SEEK_SET );
