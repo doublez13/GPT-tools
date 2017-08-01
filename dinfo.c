@@ -193,5 +193,8 @@ int main(){
   struct GPTHeader *header = calloc(1,sizeof(struct GPTHeader));
   readGPT(header, GPTHeader1);
   writeGPT(header, deviceFile);
+
+
+  fclose(deviceFile);
   return 0;
 }
