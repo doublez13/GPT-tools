@@ -16,8 +16,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <string.h>
-#include <zlib.h>
 
 #define HEADER_SIZE 512
 #define LBA_SIZE 512
