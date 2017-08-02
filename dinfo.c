@@ -38,10 +38,11 @@ struct GPTHeader{
 };
 
 
-//Return 1 if the device is GPT
-//Return 0 otherwise
-//This function checks both the default and
-//backup GPT headers.
+/*
+Return 1 if the device is GPT
+Return 0 otherwise
+This function checks both the default and backup GPT headers.
+*/
 int isGPT(FILE *deviceFile){
   int offset = LBA_SIZE;
   char gptSig[9] = "EFI PART";
@@ -51,11 +52,13 @@ int isGPT(FILE *deviceFile){
   int GPT2 = 0;
  
   //Header 1 
+  //MAKE USE OF THE FUNCTIONS BELOW
   fseek( deviceFile, offset , SEEK_SET );
   fread(diskSig, 1, 8, deviceFile);
   if(strcmp(gptSig, diskSig) == 0){GPT1 = 1;}
 
   //Header 2
+  //MAKE USE THE FUNCTIONS BELOW
   fseek(deviceFile, 0, SEEK_END);
   offset = ftell(deviceFile);
   offset -= HEADER_SIZE;
@@ -85,35 +88,30 @@ void getSecondaryHeader(char* header, FILE *deviceFile){
 }
 
 
-//THIS CURRENTLY ISN'T WORKING
-int verifyHeaders(char *header1, char* header2){
-  unsigned long diskCRC32_1;
-  unsigned long diskCRC32_2;
+/*
+Returns 1 if the calculated CRC32 matches the on disk CRC32
+Returns 0 otherwise
+*/
+int verifyGPT(char *header){
+  unsigned long diskCRC32;
   //FIX THE HARD CODED INTS
-  unsigned char* copyHeader1 = (unsigned char *)calloc(1, 92);
-  unsigned char* copyHeader2 = (unsigned char *)calloc(1, 92);
+  unsigned char* copyHeader = (unsigned char *)calloc(1, 92);
  
-  memcpy( copyHeader1, header1,  92 );
-  memcpy( copyHeader2, header2,  92 ); 
+  memcpy( copyHeader, header,  92 );
  
   //zero out CRC32
   //maybe clean this up by doing an unsigned int 0 
-  copyHeader1[16] = 0;
-  copyHeader1[17] = 0;
-  copyHeader1[18] = 0;
-  copyHeader1[19] = 0;
-  copyHeader2[16] = 0;
-  copyHeader2[17] = 0;
-  copyHeader2[18] = 0;
-  copyHeader2[19] = 0;
+  copyHeader[16] = 0;
+  copyHeader[17] = 0;
+  copyHeader[18] = 0;
+  copyHeader[19] = 0;
 
-  unsigned long calCRC32_1 = crc32(0, copyHeader1, 92);
-  unsigned long calCRC32_2 = crc32(0, copyHeader2, 92);
+  unsigned long calCRC32 = crc32(0, copyHeader, 92);
 
-  memcpy( &diskCRC32_1, header1 + 16,  8 );
-  memcpy( &diskCRC32_2, header2 + 16,  8 );
-
-  return (calCRC32_1 == diskCRC32_1) && (calCRC32_2 == diskCRC32_2);
+  memcpy( &diskCRC32, header + 16,  8 );
+ 
+  free(copyHeader);
+  return calCRC32 == diskCRC32;
 }
 
 
@@ -138,10 +136,14 @@ void readGPT(struct GPTHeader *header, char* GPTHeader){
 }
 
 
-//Write header to disk
-//This does not alter the partition table
-//Returns 0 on clean write, -1 on failure
+/*
+Write header to disk
+This does not alter the partition table
+Returns 0 on clean write, -1 on failure
+*/
 int writeCharGPT(char *srcHeader, FILE *deviceFile){
+  //THIS CURRENTLY WRITES THE SAME GPT TO PRIMARY AND BACKUP
+  //THIS IS INCORRECT AND NEEDS TO BE CHANGED
   long offset = LBA_SIZE;
   int ret1, ret2;
 
@@ -158,9 +160,11 @@ int writeCharGPT(char *srcHeader, FILE *deviceFile){
   return -1;
 }
 
-//Writes the GPT found in the struct GPTHeader to disk
-//both primary and backup
-//Returns 0 on clean write, -1 on failure
+/*
+Writes the GPT found in the struct GPTHeader to disk
+both primary and backup
+Returns 0 on clean write, -1 on failure
+*/
 int writeGPT(struct GPTHeader *header, FILE *deviceFile){
   char* charHeader = (char *)calloc(1, HEADER_SIZE);
   int result; 
@@ -186,10 +190,34 @@ int writeGPT(struct GPTHeader *header, FILE *deviceFile){
 }
 
 
+/*
+Builds a fresh GPTHeader pair
+No Return value
+*/
+void buildGPT(struct GPTHeader *GPTHeader1, struct GPTHeader *GPTHeader2){
+  struct GPTHeader *primary = calloc(1,sizeof(struct GPTHeader));
+  //struct GPTHeader *secondary = calloc(1,sizeof(struct GPTHeader));
+
+  //primary->signature = sig;
+  //char               revision[4];
+  primary->headerSize = 92;   //92 in most cases. 512-92 is just 0s
+  primary->crc32      = 0;        //different for primary and backup
+  primary->reserved   = 0;
+  //primary->LBA1 =; 
+  //primary->LBA2 =;   //swapped for backup
+  //unsigned long long LBApart, LBApartLast; //different for primary and backup
+  //char               GUID[16];
+  primary->LBAstart   = 2;     //LBA of partition entries. Different on Pr and Ba
+  primary->numParts   = 128;
+  primary->singleSize = 128;
+  //primary->crc32Part  = 0;//FIX THIS!
+  
+} 
+
 
 int main(){
   FILE *deviceFile;
-  char path[10] = "/dev/sdd";
+  char path[10] = "/dev/sdc";
   
   if(access(path, F_OK)){
     printf("No Such Device\n");
@@ -207,25 +235,10 @@ int main(){
   getPrimaryHeader(GPTHeader1, deviceFile);
   getSecondaryHeader(GPTHeader2, deviceFile); 
 
-  int identicalHeaders = verifyHeaders(GPTHeader1, GPTHeader2);
-  //if(!identicalHeaders){
-  //  printf("Your GPT Headers don't match\n");
-  //  printf("Fixing...\n");
-  //  //See which one (maybe both) has and an invalid checksum
-  //  //copyHeaders(GPTHeader1, GPTHeader2, deviceFile);
-  //  writeCharGPT(GPTHeader2, deviceFile);
-  //  getPrimaryHeader(GPTHeader1, deviceFile);
-  //  getSecondaryHeader(GPTHeader2, deviceFile);
-  //  if(verifyHeaders(GPTHeader1, GPTHeader2)){
-  //    printf("Fixed\n");
-  //  }
-  //  else{
-  //    printf("GPT header could not be restored...");
-  //    printf("Exiting...");
-  //  }
-  //}
-  
-  
+  if( !verifyGPT(GPTHeader1) ){printf("Primary header corrupted\n");}
+  if( !verifyGPT(GPTHeader2) ){printf("Secondary header corrupted\n");}
+ 
+ 
   struct GPTHeader *header = calloc(1,sizeof(struct GPTHeader));
   readGPT(header, GPTHeader1);
   //writeGPT(header, deviceFile);
