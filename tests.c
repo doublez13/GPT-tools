@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include "libgpt.h"
+#include "include/libgpt.h"
 
 int main(){
   FILE *deviceFile;

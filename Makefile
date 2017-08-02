@@ -1,8 +1,6 @@
 all: libgpt.so
 
-test: tests.run
-
-tests.run: tests.c libgpt.so
+tests: tests.c libgpt.so
 	gcc -Wall -o tests.run tests.c libgpt.so
 
 libgpt.so: libgpt.o
