@@ -18,24 +18,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
+#include "libgpt.h"
 
 #define HEADER_SIZE 512
 #define LBA_SIZE 512
-
-struct GPTHeader{
-  char               signature[8];
-  char               revision[4];
-  unsigned int       headerSize;   //92 in most cases. 512-92 is just 0s
-  unsigned int       crc32;        //different for primary and backup
-  unsigned int       reserved;
-  unsigned long long LBA1, LBA2;   //swapped for backup
-  unsigned long long LBApart, LBApartLast; //different for primary and backup
-  char               GUID[16];
-  unsigned long long LBAstart;     //LBA of partition entries. Different on Pr and Ba
-  unsigned int       numParts;
-  unsigned int       singleSize;
-  unsigned int       crc32Part;
-};
 
 
 /*
@@ -217,7 +203,7 @@ void buildGPT(struct GPTHeader *GPTHeader1, struct GPTHeader *GPTHeader2){
 
 int main(){
   FILE *deviceFile;
-  char path[10] = "/dev/sdc";
+  char path[10] = "/dev/sdb";
   
   if(access(path, F_OK)){
     printf("No Such Device\n");
