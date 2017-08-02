@@ -199,37 +199,3 @@ void buildGPT(struct GPTHeader *GPTHeader1, struct GPTHeader *GPTHeader2){
   //primary->crc32Part  = 0;//FIX THIS!
   
 } 
-
-
-int main(){
-  FILE *deviceFile;
-  char path[10] = "/dev/sdb";
-  
-  if(access(path, F_OK)){
-    printf("No Such Device\n");
-    return 0;
-  }
-  deviceFile=fopen(path, "w+");
-
-  if(!isGPT(deviceFile)){
-    printf("Not a GPT device\n");
-    return 0;
-  }
-
-  char* GPTHeader1 = (char *)calloc(1, HEADER_SIZE);
-  char* GPTHeader2 = (char *)calloc(1, HEADER_SIZE);
-  getPrimaryHeader(GPTHeader1, deviceFile);
-  getSecondaryHeader(GPTHeader2, deviceFile); 
-
-  if( !verifyGPT(GPTHeader1) ){printf("Primary header corrupted\n");}
-  if( !verifyGPT(GPTHeader2) ){printf("Secondary header corrupted\n");}
- 
- 
-  struct GPTHeader *header = calloc(1,sizeof(struct GPTHeader));
-  readGPT(header, GPTHeader1);
-  //writeGPT(header, deviceFile);
-
-
-  fclose(deviceFile);
-  return 0;
-}
