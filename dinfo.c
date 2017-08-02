@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <zlib.h>
 
 #define HEADER_SIZE 512
 #define LBA_SIZE 512
@@ -83,14 +84,36 @@ void getSecondaryHeader(char* header, FILE *deviceFile){
   fread(header, 1, HEADER_SIZE, deviceFile);
 }
 
+
 //THIS CURRENTLY ISN'T WORKING
 int verifyHeaders(char *header1, char* header2){
-  int identical = 0;
-  if(strcmp(header1, header2) == 0){identical = 1;}
+  unsigned long diskCRC32_1;
+  unsigned long diskCRC32_2;
+  //FIX THE HARD CODED INTS
+  unsigned char* copyHeader1 = (unsigned char *)calloc(1, 92);
+  unsigned char* copyHeader2 = (unsigned char *)calloc(1, 92);
+ 
+  memcpy( copyHeader1, header1,  92 );
+  memcpy( copyHeader2, header2,  92 ); 
+ 
+  //zero out CRC32
+  //maybe clean this up by doing an unsigned int 0 
+  copyHeader1[16] = 0;
+  copyHeader1[17] = 0;
+  copyHeader1[18] = 0;
+  copyHeader1[19] = 0;
+  copyHeader2[16] = 0;
+  copyHeader2[17] = 0;
+  copyHeader2[18] = 0;
+  copyHeader2[19] = 0;
 
- //Do CRC32 header checks here!
+  unsigned long calCRC32_1 = crc32(0, copyHeader1, 92);
+  unsigned long calCRC32_2 = crc32(0, copyHeader2, 92);
 
-  return identical;
+  memcpy( &diskCRC32_1, header1 + 16,  8 );
+  memcpy( &diskCRC32_2, header2 + 16,  8 );
+
+  return (calCRC32_1 == diskCRC32_1) && (calCRC32_2 == diskCRC32_2);
 }
 
 
@@ -184,7 +207,7 @@ int main(){
   getPrimaryHeader(GPTHeader1, deviceFile);
   getSecondaryHeader(GPTHeader2, deviceFile); 
 
-  //int identicalHeaders = verifyHeaders(GPTHeader1, GPTHeader2);
+  int identicalHeaders = verifyHeaders(GPTHeader1, GPTHeader2);
   //if(!identicalHeaders){
   //  printf("Your GPT Headers don't match\n");
   //  printf("Fixing...\n");
@@ -205,7 +228,7 @@ int main(){
   
   struct GPTHeader *header = calloc(1,sizeof(struct GPTHeader));
   readGPT(header, GPTHeader1);
-  writeGPT(header, deviceFile);
+  //writeGPT(header, deviceFile);
 
 
   fclose(deviceFile);
