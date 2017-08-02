@@ -44,21 +44,24 @@ This function checks both the default and backup GPT headers.
 int isGPT(FILE *deviceFile);
 
 
-void getPrimaryHeader(char* header, FILE *deviceFile);
-
-
-void getSecondaryHeader(char* header, FILE *deviceFile);
+unsigned long long getPrimaryHeaderOffset();
+unsigned long long getSecondaryHeaderOffset(FILE *deviceFile);
 
 
 /*
 Returns 1 if the calculated CRC32 matches the on disk CRC32
 Returns 0 otherwise
 */
-int verifyGPT(char *header);
+int verifyGPT(struct GPTHeader *header);
+
 
 
 //Populates the GPTHeader struct
-void readGPT(struct GPTHeader *header, char* GPTHeader);
+void readGPT(struct GPTHeader *header, FILE *deviceFile, unsigned long long offset);
+
+void readCharGPT(char *dstHeader, FILE *deviceFile, unsigned long long offset);
+
+void charToGPTHeader(struct GPTHeader *dst, char *src);
 
 
 /*
@@ -66,14 +69,17 @@ Write header to disk
 This does not alter the partition table
 Returns 0 on clean write, -1 on failure
 */
-int writeCharGPT(char *srcHeader, FILE *deviceFile);
+int writeCharGPT(char *srcHeader, FILE *deviceFile, unsigned long long offset);
 
 /*
 Writes the GPT found in the struct GPTHeader to disk
 both primary and backup
 Returns 0 on clean write, -1 on failure
 */
-int writeGPT(struct GPTHeader *header, FILE *deviceFile);
+int writeGPT(struct GPTHeader *header, FILE *deviceFile, unsigned long long offset);
+
+void GPTHeaderToChar(char *dst, struct GPTHeader *src);
+
 
 
 /*

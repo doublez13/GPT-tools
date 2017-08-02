@@ -21,32 +21,42 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 int main(){
   FILE *deviceFile;
-  char path[10] = "/dev/sdb";
+  char path[10] = "/dev/sdc";
   
   if(access(path, F_OK)){
-    printf("No Such Device\n");
+    printf("Device %s not found \n", path);
     return 0;
   }
   deviceFile=fopen(path, "w+");
 
   if(!isGPT(deviceFile)){
-    printf("Not a GPT device\n");
+    printf("No GPT header found on %s\n", path);
     return 0;
   }
 
-  char* GPTHeader1 = (char *)calloc(1, HEADER_SIZE);
-  char* GPTHeader2 = (char *)calloc(1, HEADER_SIZE);
-  getPrimaryHeader(GPTHeader1, deviceFile);
-  getSecondaryHeader(GPTHeader2, deviceFile); 
 
+  //Reads the Primary and Secondary GPTs
+  struct GPTHeader *GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
+  struct GPTHeader *GPTHeader2 = calloc(1,sizeof(struct GPTHeader));
+  readGPT( GPTHeader1, deviceFile, getPrimaryHeaderOffset() );
+  readGPT( GPTHeader2, deviceFile, getSecondaryHeaderOffset(deviceFile) ); 
   if( !verifyGPT(GPTHeader1) ){printf("Primary header corrupted\n");}
   if( !verifyGPT(GPTHeader2) ){printf("Secondary header corrupted\n");}
  
- 
-  struct GPTHeader *header = calloc(1,sizeof(struct GPTHeader));
-  readGPT(header, GPTHeader1);
-  //writeGPT(header, deviceFile);
+  //Writes the Primary and Secondary GPTs back on the disk
+  //Reads the Primary and Secondary GPTs
+  writeGPT( GPTHeader1, deviceFile, getPrimaryHeaderOffset() );
+  writeGPT( GPTHeader2, deviceFile, getSecondaryHeaderOffset(deviceFile) );
+  free(GPTHeader1);
+  free(GPTHeader2);
+  GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
+  GPTHeader2 = calloc(1,sizeof(struct GPTHeader));
+  readGPT(GPTHeader1, deviceFile, getPrimaryHeaderOffset() );
+  readGPT(GPTHeader2, deviceFile, getSecondaryHeaderOffset(deviceFile) );
+  if( !verifyGPT(GPTHeader1) ){printf("Primary header corrupted\n");}
+  if( !verifyGPT(GPTHeader2) ){printf("Secondary header corrupted\n");}
 
+ 
 
   fclose(deviceFile);
   printf("Testing Completed\n");
