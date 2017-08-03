@@ -53,12 +53,11 @@ int isGPT(FILE *deviceFile){
 
 
 
-unsigned long long getPrimaryHeaderOffset(){
+uint64_t getPrimaryHeaderOffset(){
   return LBA_SIZE;  
 }
 
-
-unsigned long long getSecondaryHeaderOffset( FILE *deviceFile ){
+uint64_t getSecondaryHeaderOffset( FILE *deviceFile ){
   fseek(deviceFile, 0, SEEK_END);
   return ftell(deviceFile) - HEADER_SIZE;
 }
@@ -74,7 +73,7 @@ int verifyGPT(struct GPTHeader *header){
   return header->crc32 == crc32GPT(header);
 }
 
-unsigned long crc32GPT(struct GPTHeader *header){
+uint32_t crc32GPT(struct GPTHeader *header){
   char *charHeader;
   struct GPTHeader *copyHeader = (struct GPTHeader*)calloc(1, sizeof(struct GPTHeader));
   memcpy( copyHeader, header,  sizeof(struct GPTHeader) );
@@ -90,13 +89,13 @@ unsigned long crc32GPT(struct GPTHeader *header){
  *Populates header with the GPT header found in deviceFile at offset
  *
  */
-void readGPT(struct GPTHeader *header, FILE *deviceFile, unsigned long long offset){
+void readGPT(struct GPTHeader *header, FILE *deviceFile, uint64_t offset){
   char *charHeader = (char *)calloc(1, HEADER_SIZE);
   readCharGPT(charHeader, deviceFile, offset);
   charToGPTHeader(header, charHeader);
 }
 
-void readCharGPT(char *dstHeader, FILE *deviceFile, unsigned long long offset){
+void readCharGPT(char *dstHeader, FILE *deviceFile, uint64_t offset){
   fseek( deviceFile, offset , SEEK_SET );
   fread( dstHeader, 1, HEADER_SIZE, deviceFile );
 }
@@ -126,7 +125,7 @@ void charToGPTHeader(struct GPTHeader *dst, char *src){
 Writes the GPT found in the struct GPTHeader to disk at byte offset
 Returns 0 on clean write, -1 on failure
 */
-int writeGPT(struct GPTHeader *header, FILE *deviceFile, unsigned long long offset){
+int writeGPT(struct GPTHeader *header, FILE *deviceFile, uint64_t offset){
   char* charHeader = (char *)calloc(1, HEADER_SIZE);
   int result;
   GPTHeaderToChar(charHeader, header);
@@ -141,7 +140,7 @@ int writeGPT(struct GPTHeader *header, FILE *deviceFile, unsigned long long offs
  * This does not alter the partition table
  * Returns 0 on clean write, -1 on failure
  * */
-int writeCharGPT(char *srcHeader, FILE *deviceFile, unsigned long long offset){
+int writeCharGPT(char *srcHeader, FILE *deviceFile, uint64_t offset){
   int ret;
   fseek( deviceFile, offset , SEEK_SET );
   ret = fwrite( srcHeader, 1, HEADER_SIZE, deviceFile );
