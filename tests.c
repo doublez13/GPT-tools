@@ -50,7 +50,7 @@ int main(){
     printf("Test 01: Secondary header corrupted\n");
     return 0;
   }
-  printf("Test 01: Passed\n");
+  printf("Test 01: Passed\n\n");
 
  
   //Writes the Primary and Secondary GPTs back on the disk
@@ -72,15 +72,38 @@ int main(){
     printf("Test 02: Secondary header corrupted\n");
     return 0;
   }
-  printf("Test 02: Passed\n");
+  printf("Test 02: Passed\n\n");
 
 
 
 
 
+  printf("Test 03: Verify Partition Table\n");
+  struct partTable* partTable1 = readPartTable( GPTHeader1, deviceFile);
+  if( !verifyPartTable(GPTHeader1, partTable1) ){
+    printf("Test 03: Primary Part Table corrupted\n");
+    return 0;
+  }
+  struct partTable* partTable2 = readPartTable( GPTHeader2, deviceFile);
+  if( !verifyPartTable(GPTHeader2, partTable2) ){
+    printf("Test 03: Primary Part Table corrupted\n");
+    return 0;
+  }
+  printf("Test 03: Passed\n\n");
 
-  struct partTable* partTable = readPartTable( GPTHeader1, deviceFile ); 
-  printf( "%c\n", partTable->entries[1].name[2] );
+
+
+
+  printf("Test 04: Verify Partition Tables match\n"); 
+  if( crc32PartTable(partTable1) != crc32PartTable(partTable2) ){
+    printf("Primary and backup partition tables don't match\n");
+    return 0;
+  }
+  printf("Test 04: Passed\n\n");
+
+
+
+  //printf("Test 05: Corrupt Primary Header\n");
 
 
   fclose(deviceFile);

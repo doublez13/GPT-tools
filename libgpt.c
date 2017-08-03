@@ -30,7 +30,7 @@ Return 0 otherwise
 This function checks both the default and backup GPT headers.
 */
 int isGPT(FILE *deviceFile){
-  int offset = LBA_SIZE;
+  uint64_t offset = LBA_SIZE;
   char gptSig[9] = "EFI PART";
   char diskSig[9];
   diskSig[8] = '\0';
@@ -44,6 +44,7 @@ int isGPT(FILE *deviceFile){
 
   //Header 2
   offset = getSecondaryHeaderOffset( deviceFile );
+  //printf(offset)
   fseek( deviceFile, offset , SEEK_SET );
   fread(diskSig, 1, 8, deviceFile);
   if(strcmp(gptSig, diskSig) == 0){GPT2 = 1;}
@@ -128,7 +129,28 @@ void charToGPTHeader(struct GPTHeader *dst, char *src){
   memcpy( &dst->crc32Part,   src + 88,  4 );
 }
 
+/*
+void genHeaderFromBackup(struct GPTHeader *new, struct GPTHeader *working){
 
+  if(working->LBAstart == 2)
+
+  memcpy( &new->signature,   &working->signature,  8 );
+  memcpy( &new->signature,   &working->signature,  4 );
+  new->headerSize  = working->headerSize;
+  new->crc32       = 0;
+  new->reserved    = working->reserved;
+  new->LBA1        = working->LBA2
+  new->LBA2        = working->LBA1
+  new->LBApart     =
+  new->LBApartLast =
+  new->GUID        =
+  new->LBAstart    =
+  new->numParts    = working->numParts 
+  new->singleSize  = working->numParts 
+  new->crc32Part   = 
+
+}
+*/
 
 
 
@@ -222,7 +244,6 @@ struct partTable* readPartTable(struct GPTHeader *header, FILE *deviceFile){
   uint64_t offset;
   uint64_t tableSize;
   int      part;
-  int      partsFound;
 
   numParts   = header->numParts;
   singleSize = header->singleSize;
@@ -231,27 +252,23 @@ struct partTable* readPartTable(struct GPTHeader *header, FILE *deviceFile){
 
   tableSize =  numParts*singleSize;
   charTable = (char*)malloc( tableSize ); 
-  offset    =  header->LBAstart*512;
+  offset    =  header->LBAstart*LBA_SIZE;
   readCharPartTable(charTable, tableSize, deviceFile, offset); 
 
-  partsFound = 0;
-  for(part = 0; part < numParts; part++){
-    if(charTable[part*singleSize] != 0){
-      readPartEntry( &(table->entries[partsFound]), charTable, part*singleSize, singleSize);
-      partsFound++;
-      printf("Found a partition entry!\n");
-    } 
-  }
+  for(part = 0; part < numParts; part++)
+    charToPartEntry( &(table->entries[part]), charTable, part*singleSize, singleSize);
 
   return table;
 }
+
 
 void readCharPartTable(char *dstTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset){
   fseek( deviceFile, offset , SEEK_SET );
   fread( dstTable, 1, tableSize, deviceFile );
 }
 
-void readPartEntry(struct partEntry *entry, char* charTable, uint64_t start, uint32_t length){
+
+void charToPartEntry(struct partEntry *entry, char* charTable, uint64_t start, uint32_t length){
   //we're not making use of length right now
   memcpy( &entry->typeGUID,  charTable + start +  0,  16 );
   memcpy( &entry->partGUID,  charTable + start + 16,  16 );
@@ -265,15 +282,49 @@ void readPartEntry(struct partEntry *entry, char* charTable, uint64_t start, uin
 
 
 
-
+void writeCharPartTable(char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset){
+  fseek( deviceFile, offset , SEEK_SET );
+  fwrite( srcTable, 1, tableSize, deviceFile );
+}
 
 
 void createPartTable(struct partTable *table);
 
+
 int createPart();
+
+
 //Simply zero out the partition entry on disk.
 int deletePart();
 
-int verifyPartTable(struct partTable *table);
-uint32_t crc32PartTable(struct GPTHeader *header);
 
+int verifyPartTable(struct GPTHeader *header, struct partTable *table){
+  return header->crc32Part == crc32PartTable(table);
+}
+
+
+uint32_t crc32PartTable(struct partTable *table){
+  char *charTable;
+  charTable = (char *)calloc(1, 128*128);
+  partTableToChar(charTable, table); 
+  return crc32(0, (unsigned char*)charTable, 128*128); 
+}
+
+
+void partTableToChar(char* charTable, struct partTable *table){
+  uint64_t entNum = 0;
+  struct partEntry *entries = table->entries;
+  for(entNum=0; entNum<table->numParts; entNum++)
+    partEntryToChar(charTable, &(entries[entNum]), 128*entNum, table->singleSize);
+}
+
+
+void partEntryToChar(char* charTable, struct partEntry *entry, uint64_t start, uint32_t length){
+  memcpy( charTable + start +  0, &entry->typeGUID,  16 );
+  memcpy( charTable + start + 16, &entry->partGUID,  16 );
+  memcpy( charTable + start + 32, &entry->firstLBA,   8 );
+  memcpy( charTable + start + 40, &entry->lastLBA,    8 );
+  memcpy( charTable + start + 48, &entry->flags,      8 );
+  memcpy( charTable + start + 56, &entry->name,      72 );
+  //TODO: Fill remaining space (length -128) with zeros
+}  

@@ -113,9 +113,10 @@ struct partEntry{
 
 struct partTable* readPartTable( struct GPTHeader *header, FILE *deviceFile);
 void readCharPartTable(char *dstHeader, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
-void readPartEntry(struct partEntry *entry, char* partTable, uint64_t start, uint32_t length);
 
-
+void charToPartEntry(struct partEntry *entry, char* partTable, uint64_t start, uint32_t length);
+void partEntryToChar(char* charTable, struct partEntry *entry, uint64_t start, uint32_t length);
+void partTableToChar(char* charTable, struct partTable *table);
 
 void createPartTable(struct partTable *table);
 
@@ -123,5 +124,5 @@ int createPart();
 //Simply zero out the partition entry on disk.
 int deletePart();
 
-int verifyPartTable(struct partTable *table);
-uint32_t crc32PartTable(struct GPTHeader *header);
+int verifyPartTable(struct GPTHeader *header, struct partTable *table);
+uint32_t crc32PartTable(struct partTable *table);
