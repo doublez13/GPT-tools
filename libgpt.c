@@ -43,9 +43,7 @@ int isGPT(FILE *deviceFile){
   if(strcmp(gptSig, diskSig) == 0){GPT1 = 1;}
 
   //Header 2
-  fseek(deviceFile, 0, SEEK_END);
-  offset = ftell(deviceFile);
-  offset -= HEADER_SIZE;
+  offset = getSecondaryHeaderOffset( deviceFile );
   fseek( deviceFile, offset , SEEK_SET );
   fread(diskSig, 1, 8, deviceFile);
   if(strcmp(gptSig, diskSig) == 0){GPT2 = 1;}
@@ -73,25 +71,18 @@ Returns 1 if the calculated CRC32 matches the on disk CRC32
 Returns 0 otherwise
 */
 int verifyGPT(struct GPTHeader *header){
-  unsigned long diskCRC32;
-  unsigned long calcCRC32;
-  char *charHeader;
+  return header->crc32 == crc32GPT(header);
+}
 
+unsigned long crc32GPT(struct GPTHeader *header){
+  char *charHeader;
   struct GPTHeader *copyHeader = (struct GPTHeader*)calloc(1, sizeof(struct GPTHeader));
   memcpy( copyHeader, header,  sizeof(struct GPTHeader) );
   copyHeader->crc32 = 0;
-  
   charHeader = (char *)calloc(1, 92);
-  GPTHeaderToChar(charHeader, copyHeader); 
-
-  diskCRC32 = header->crc32;
-  calcCRC32 = crc32(0, (unsigned char*)charHeader, 92); 
- 
-  free(copyHeader);
-  free(charHeader);
-  return calcCRC32 == diskCRC32;
+  GPTHeaderToChar(charHeader, copyHeader);
+  return crc32(0, (unsigned char*)charHeader, 92);
 }
-
 
 
 
@@ -186,21 +177,19 @@ void GPTHeaderToChar(char *dst, struct GPTHeader *src){
 Builds a fresh GPTHeader pair
 No Return value
 */
-void buildGPT(struct GPTHeader *GPTHeader1, struct GPTHeader *GPTHeader2){
-  struct GPTHeader *primary = calloc(1,sizeof(struct GPTHeader));
-  //struct GPTHeader *secondary = calloc(1,sizeof(struct GPTHeader));
-
-  //primary->signature = sig;
+void buildGPT(struct GPTHeader *header){
+  //header->signature = sig;
   //char               revision[4];
-  primary->headerSize = 92;   //92 in most cases. 512-92 is just 0s
-  primary->crc32      = 0;        //different for primary and backup
-  primary->reserved   = 0;
-  //primary->LBA1 =; 
-  //primary->LBA2 =;   //swapped for backup
+  header->headerSize =  92;   //92 in most cases. 512-92 is just 0s
+  header->crc32      =   0;    //zero this out initially
+  header->reserved   =   0;
+  //header->LBA1 =; 
+  //header->LBA2 =;   //swapped for backup
   //unsigned long long LBApart, LBApartLast; //different for primary and backup
   //char               GUID[16];
-  primary->LBAstart   = 2;     //LBA of partition entries. Different on Pr and Ba
-  primary->numParts   = 128;
-  primary->singleSize = 128;
-  //primary->crc32Part  = 0;//FIX THIS!  
+  header->LBAstart   =   2;     //LBA of partition entries. Different on Pr and Ba
+  header->numParts   = 128;
+  header->singleSize = 128;
+  header->crc32Part =   0;//FIX THIS!
+  header->crc32 = crc32GPT(header); //Set this last
 } 

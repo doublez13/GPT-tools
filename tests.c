@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 int main(){
   FILE *deviceFile;
-  char path[10] = "/dev/sdc";
+  char path[10] = "/dev/sdb";
   
   if(access(path, F_OK)){
     printf("Device %s not found \n", path);
@@ -36,15 +36,25 @@ int main(){
 
 
   //Reads the Primary and Secondary GPTs
+  printf("Test 01: Verify on disk GPTs\n");
   struct GPTHeader *GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
   struct GPTHeader *GPTHeader2 = calloc(1,sizeof(struct GPTHeader));
   readGPT( GPTHeader1, deviceFile, getPrimaryHeaderOffset() );
   readGPT( GPTHeader2, deviceFile, getSecondaryHeaderOffset(deviceFile) ); 
-  if( !verifyGPT(GPTHeader1) ){printf("Primary header corrupted\n");}
-  if( !verifyGPT(GPTHeader2) ){printf("Secondary header corrupted\n");}
+  if( !verifyGPT(GPTHeader1) ){
+    printf("Test 01: Primary header corrupted\n");
+    return 0;
+  }
+  if( !verifyGPT(GPTHeader2) ){
+    printf("Test 01: Secondary header corrupted\n");
+    return 0;
+  }
+  printf("Test 01: Passed\n");
+
  
   //Writes the Primary and Secondary GPTs back on the disk
   //Reads the Primary and Secondary GPTs
+  printf("Test 02: Verify GPT writes to disk\n");
   writeGPT( GPTHeader1, deviceFile, getPrimaryHeaderOffset() );
   writeGPT( GPTHeader2, deviceFile, getSecondaryHeaderOffset(deviceFile) );
   free(GPTHeader1);
@@ -53,12 +63,19 @@ int main(){
   GPTHeader2 = calloc(1,sizeof(struct GPTHeader));
   readGPT(GPTHeader1, deviceFile, getPrimaryHeaderOffset() );
   readGPT(GPTHeader2, deviceFile, getSecondaryHeaderOffset(deviceFile) );
-  if( !verifyGPT(GPTHeader1) ){printf("Primary header corrupted\n");}
-  if( !verifyGPT(GPTHeader2) ){printf("Secondary header corrupted\n");}
+  if( !verifyGPT(GPTHeader1) ){
+    printf("Test 02: Primary header corrupted\n");
+    return 0;
+  }
+  if( !verifyGPT(GPTHeader2) ){
+    printf("Test 02: Secondary header corrupted\n");
+    return 0;
+  }
+  printf("Test 02: Passed\n");
 
  
 
   fclose(deviceFile);
-  printf("Testing Completed\n");
+  printf("ALL TESTS PASSED\n");
   return 0;
 }

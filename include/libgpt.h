@@ -24,7 +24,7 @@ struct GPTHeader{
   char               signature[8];
   char               revision[4];
   unsigned int       headerSize;   //92 in most cases. 512-92 is just 0s
-  unsigned int       crc32;        //different for primary and backup
+  unsigned long       crc32;        //different for primary and backup
   unsigned int       reserved;
   unsigned long long LBA1, LBA2;   //swapped for backup
   unsigned long long LBApart, LBApartLast; //different for primary and backup
@@ -54,6 +54,7 @@ Returns 0 otherwise
 */
 int verifyGPT(struct GPTHeader *header);
 
+unsigned long crc32GPT(struct GPTHeader *header);
 
 
 //Populates the GPTHeader struct
@@ -86,4 +87,4 @@ void GPTHeaderToChar(char *dst, struct GPTHeader *src);
 Builds a fresh GPTHeader pair
 No Return value
 */
-void buildGPT(struct GPTHeader *GPTHeader1, struct GPTHeader *GPTHeader2);
+void buildGPT(struct GPTHeader *GPTHeader1);
