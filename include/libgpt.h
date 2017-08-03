@@ -36,7 +36,6 @@ struct GPTHeader{
   uint32_t crc32Part;
 };
 
-
 /*
 Return 1 if the device is GPT
 Return 0 otherwise
@@ -89,3 +88,40 @@ Builds a fresh GPTHeader pair
 No Return value
 */
 void buildGPT(struct GPTHeader *GPTHeader1);
+
+
+
+
+
+
+
+//////PARTITIONS///////
+struct partTable{
+  uint32_t numParts;             //Number of partition entries. Found in GPT
+  uint32_t singleSize;           //Size of a single partition entry. Found in GPT
+  struct   partEntry *entries;   //Pointer to copied partition table. Should be (numParts * singleSize) in length
+};
+
+struct partEntry{
+  char     typeGUID[16];
+  char     partGUID[16];
+  uint64_t firstLBA;
+  uint64_t lastLBA;
+  uint64_t flags;
+  char     name[72]; //UTF-16, Max 36 chars
+};
+
+struct partTable* readPartTable( struct GPTHeader *header, FILE *deviceFile);
+void readCharPartTable(char *dstHeader, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
+void readPartEntry(struct partEntry *entry, char* partTable, uint64_t start, uint32_t length);
+
+
+
+void createPartTable(struct partTable *table);
+
+int createPart();
+//Simply zero out the partition entry on disk.
+int deletePart();
+
+int verifyPartTable(struct partTable *table);
+uint32_t crc32PartTable(struct GPTHeader *header);

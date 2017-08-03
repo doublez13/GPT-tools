@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
 #include "include/libgpt.h"
 
 int main(){
@@ -73,7 +74,14 @@ int main(){
   }
   printf("Test 02: Passed\n");
 
- 
+
+
+
+
+
+  struct partTable* partTable = readPartTable( GPTHeader1, deviceFile ); 
+  printf( "%lu\n", partTable->entries[1].firstLBA );
+
 
   fclose(deviceFile);
   printf("ALL TESTS PASSED\n");
