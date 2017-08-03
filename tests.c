@@ -80,7 +80,7 @@ int main(){
 
 
   struct partTable* partTable = readPartTable( GPTHeader1, deviceFile ); 
-  printf( "%lu\n", partTable->entries[1].firstLBA );
+  printf( "%c\n", partTable->entries[1].name[2] );
 
 
   fclose(deviceFile);

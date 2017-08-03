@@ -112,20 +112,20 @@ void readCharGPT(char *dstHeader, FILE *deviceFile, uint64_t offset){
 }
 
 void charToGPTHeader(struct GPTHeader *dst, char *src){
-  memcpy( &(*dst).signature,   src +  0,  8 );
-  memcpy( &(*dst).revision,    src +  8,  4 );
-  memcpy( &(*dst).headerSize,  src + 12,  4 );
-  memcpy( &(*dst).crc32,       src + 16,  4 );
-  memcpy( &(*dst).reserved,    src + 20,  4 );
-  memcpy( &(*dst).LBA1,        src + 24,  8 );
-  memcpy( &(*dst).LBA2,        src + 32,  8 );
-  memcpy( &(*dst).LBApart,     src + 40,  8 );
-  memcpy( &(*dst).LBApartLast, src + 48,  8 );
-  memcpy( &(*dst).GUID,        src + 56, 16 );
-  memcpy( &(*dst).LBAstart,    src + 72,  8 );
-  memcpy( &(*dst).numParts,    src + 80,  4 );
-  memcpy( &(*dst).singleSize,  src + 84,  4 );
-  memcpy( &(*dst).crc32Part,   src + 88,  4 );
+  memcpy( &dst->signature,   src +  0,  8 );
+  memcpy( &dst->revision,    src +  8,  4 );
+  memcpy( &dst->headerSize,  src + 12,  4 );
+  memcpy( &dst->crc32,       src + 16,  4 );
+  memcpy( &dst->reserved,    src + 20,  4 );
+  memcpy( &dst->LBA1,        src + 24,  8 );
+  memcpy( &dst->LBA2,        src + 32,  8 );
+  memcpy( &dst->LBApart,     src + 40,  8 );
+  memcpy( &dst->LBApartLast, src + 48,  8 );
+  memcpy( &dst->GUID,        src + 56, 16 );
+  memcpy( &dst->LBAstart,    src + 72,  8 );
+  memcpy( &dst->numParts,    src + 80,  4 );
+  memcpy( &dst->singleSize,  src + 84,  4 );
+  memcpy( &dst->crc32Part,   src + 88,  4 );
 }
 
 
@@ -161,20 +161,20 @@ int writeCharGPT(char *srcHeader, FILE *deviceFile, uint64_t offset){
 }
 
 void GPTHeaderToChar(char *dst, struct GPTHeader *src){
-  memcpy( dst +  0, &(*src).signature,    8 );
-  memcpy( dst +  8, &(*src).revision,     4 );
-  memcpy( dst + 12, &(*src).headerSize,   4 );
-  memcpy( dst + 16, &(*src).crc32,        4 );
-  memcpy( dst + 20, &(*src).reserved,     4 );
-  memcpy( dst + 24, &(*src).LBA1,         8 );
-  memcpy( dst + 32, &(*src).LBA2,         8 );
-  memcpy( dst + 40, &(*src).LBApart,      8 );
-  memcpy( dst + 48, &(*src).LBApartLast,  8 );
-  memcpy( dst + 56, &(*src).GUID,        16 );
-  memcpy( dst + 72, &(*src).LBAstart,     8 );
-  memcpy( dst + 80, &(*src).numParts,     4 );
-  memcpy( dst + 84, &(*src).singleSize,   4 );
-  memcpy( dst + 88, &(*src).crc32Part,    4 );
+  memcpy( dst +  0, &src->signature,    8 );
+  memcpy( dst +  8, &src->revision,     4 );
+  memcpy( dst + 12, &src->headerSize,   4 );
+  memcpy( dst + 16, &src->crc32,        4 );
+  memcpy( dst + 20, &src->reserved,     4 );
+  memcpy( dst + 24, &src->LBA1,         8 );
+  memcpy( dst + 32, &src->LBA2,         8 );
+  memcpy( dst + 40, &src->LBApart,      8 );
+  memcpy( dst + 48, &src->LBApartLast,  8 );
+  memcpy( dst + 56, &src->GUID,        16 );
+  memcpy( dst + 72, &src->LBAstart,     8 );
+  memcpy( dst + 80, &src->numParts,     4 );
+  memcpy( dst + 84, &src->singleSize,   4 );
+  memcpy( dst + 88, &src->crc32Part,    4 );
 }
 
 
@@ -253,12 +253,12 @@ void readCharPartTable(char *dstTable, uint64_t tableSize, FILE *deviceFile, uin
 
 void readPartEntry(struct partEntry *entry, char* charTable, uint64_t start, uint32_t length){
   //we're not making use of length right now
-  memcpy( &(*entry).typeGUID,  charTable + start +  0,  16 );
-  memcpy( &(*entry).partGUID,  charTable + start + 16,  16 );
-  memcpy( &(*entry).firstLBA,  charTable + start + 32,   8 );
-  memcpy( &(*entry).lastLBA,   charTable + start + 40,   8 );
-  memcpy( &(*entry).flags,     charTable + start + 48,   8 );
-  memcpy( &(*entry).name,      charTable + start + 56,  72 );
+  memcpy( &entry->typeGUID,  charTable + start +  0,  16 );
+  memcpy( &entry->partGUID,  charTable + start + 16,  16 );
+  memcpy( &entry->firstLBA,  charTable + start + 32,   8 );
+  memcpy( &entry->lastLBA,   charTable + start + 40,   8 );
+  memcpy( &entry->flags,     charTable + start + 48,   8 );
+  memcpy( &entry->name,      charTable + start + 56,  72 );
 }
 
 
