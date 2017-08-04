@@ -113,7 +113,7 @@ int main(){
 
 
 
-  printf("Test 05: Corrupt Primary Header\n");
+  printf("Test 05: Corrupt Primary Header. Then repair\n");
   char garbage[100] = "lkfsdalkfjklajsdklfjklsadjfkljaskldjfkllasdjfklj";
   fseek( deviceFile, 512 , SEEK_SET );
   fwrite( garbage, 1, 100, deviceFile );
@@ -125,7 +125,7 @@ int main(){
   partTable1 = readPartTable( GPTHeader1, deviceFile);
   partTable2 = readPartTable( GPTHeader2, deviceFile);
   genHeaderFromBackup(GPTHeader1, partTable1, GPTHeader2, partTable2);
-  writeGPT( GPTHeader1, deviceFile, getPrimaryHeaderOffset(deviceFile) );
+  writeGPT( GPTHeader1, deviceFile, getPrimaryHeaderOffset() );
   free(GPTHeader1);
   free(GPTHeader2);
   GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
@@ -137,6 +137,43 @@ int main(){
   printf("Test 05: Passed\n\n");
 
 
+
+
+  printf("Test 06: Corrupt Primary Header and Primary GPT Table. Then repair.\n");
+  char garbage2[92+128*128];
+  int i;
+  for(i=0; i < 92+128*128; i++){garbage2[i] = 'g';}
+  fseek( deviceFile, 512 , SEEK_SET );
+  fwrite( garbage2, 1, 92+128*128, deviceFile );
+  free(GPTHeader1);
+  GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
+  GPTHeader2 = calloc(1,sizeof(struct GPTHeader));
+  readGPT(GPTHeader1, deviceFile, getPrimaryHeaderOffset() );
+  if( !verifyGPT(GPTHeader1) ){
+    printf("Test 06: We've corrupted the primary GPT header AND the primary part table\n");
+  }
+
+  readGPT(GPTHeader2, deviceFile, getSecondaryHeaderOffset(deviceFile) );
+  partTable2 = readPartTable( GPTHeader2, deviceFile);
+  genHeaderFromBackup(GPTHeader1, partTable1, GPTHeader2, partTable2);
+  writeGPT( GPTHeader1, deviceFile, getPrimaryHeaderOffset() ); //Fix the header first
+  writePartTable(GPTHeader1,  getPrimaryHeaderOffset(), partTable1, deviceFile);
+  
+  free(GPTHeader1);
+  free(GPTHeader2);
+  GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
+  readGPT(GPTHeader1, deviceFile, getPrimaryHeaderOffset() );
+  partTable1 = readPartTable( GPTHeader1, deviceFile);
+  if( !verifyGPT(GPTHeader1) ){
+    printf("Test 06: Primary header could not be repaired\n");
+    return 0;
+  }
+  if( !verifyPartTable(GPTHeader1, partTable1) ){
+    printf("Test 06: Primary partition table could not be repaired\n");
+    return 0;
+  }
+
+  printf("Test 06: Passed\n\n");
 
 
   fclose(deviceFile);

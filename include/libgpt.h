@@ -118,6 +118,11 @@ void charToPartEntry(struct partEntry *entry, char* partTable, uint64_t start, u
 void partEntryToChar(char* charTable, struct partEntry *entry, uint64_t start, uint32_t length);
 void partTableToChar(char* charTable, struct partTable *table);
 
+
+void writePartTable(struct GPTHeader *header, uint64_t offset, struct partTable *table, FILE *deviceFile);
+void writeCharPartTable(char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
+
+
 void createPartTable(struct partTable *table);
 
 void genHeaderFromBackup(struct GPTHeader *new ,struct partTable *newTable,

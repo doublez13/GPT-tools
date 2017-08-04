@@ -295,10 +295,28 @@ void charToPartEntry(struct partEntry *entry, char* charTable, uint64_t start, u
 
 
 
+void writePartTable(struct GPTHeader *header,  uint64_t headerOffset, struct partTable *table, FILE *deviceFile){
+  char *charTable;
+  uint32_t crc32Part = crc32PartTable(table);
+  uint64_t offset    = header->LBAstart * LBA_SIZE;
+  
+  charTable = (char *)calloc(1, 128*128);
+  partTableToChar(charTable, table);
+  
+  writeCharPartTable(charTable, table->numParts * table->singleSize, deviceFile, offset);
+  header->crc32Part = crc32Part;
+
+  header->crc32 = crc32GPT(header);
+  writeGPT(header, deviceFile, headerOffset);
+}
+
 void writeCharPartTable(char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset){
   fseek( deviceFile, offset , SEEK_SET );
   fwrite( srcTable, 1, tableSize, deviceFile );
 }
+
+
+
 
 
 void createPartTable(struct partTable *table);
