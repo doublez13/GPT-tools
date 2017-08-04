@@ -31,9 +31,13 @@ int main(){
   deviceFile=fopen(path, "w+");
 
   if(!isGPT(deviceFile)){
-    printf("No GPT header found on %s\n", path);
+    printf("\nNo GPT header found on %s\n", path);
     return 0;
   }
+  else{
+    printf("\nGPT HEADER FOUND on device %s\n", path);
+  }
+
 
 
   //Reads the Primary and Secondary GPTs
@@ -79,6 +83,12 @@ int main(){
 
 
   printf("Test 03: Verify Partition Table\n");
+  free(GPTHeader1);
+  free(GPTHeader2);
+  GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
+  GPTHeader2 = calloc(1,sizeof(struct GPTHeader));
+  readGPT(GPTHeader1, deviceFile, getPrimaryHeaderOffset() );
+  readGPT(GPTHeader2, deviceFile, getSecondaryHeaderOffset(deviceFile) );
   struct partTable* partTable1 = readPartTable( GPTHeader1, deviceFile);
   if( !verifyPartTable(GPTHeader1, partTable1) ){
     printf("Test 03: Primary Part Table corrupted\n");

@@ -260,6 +260,8 @@ struct partTable* readPartTable(struct GPTHeader *header, FILE *deviceFile){
   singleSize = header->singleSize;
   table = (struct partTable*)calloc(1, sizeof(struct partTable) );
   table->entries = (struct partEntry*)calloc(1, numParts*sizeof(struct partEntry) );
+  table->numParts   = numParts; 
+  table->singleSize = singleSize;
 
   tableSize =  numParts*singleSize;
   charTable = (char*)malloc( tableSize ); 
@@ -325,8 +327,9 @@ uint32_t crc32PartTable(struct partTable *table){
 void partTableToChar(char* charTable, struct partTable *table){
   uint64_t entNum = 0;
   struct partEntry *entries = table->entries;
-  for(entNum=0; entNum<table->numParts; entNum++)
+  for(entNum=0; entNum < (table->numParts); entNum++){
     partEntryToChar(charTable, &(entries[entNum]), 128*entNum, table->singleSize);
+  }
 }
 
 
