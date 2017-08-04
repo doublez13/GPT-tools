@@ -52,7 +52,7 @@ int main(){
   }
   printf("Test 01: Passed\n\n");
 
- 
+
   //Writes the Primary and Secondary GPTs back on the disk
   //Reads the Primary and Secondary GPTs
   printf("Test 02: Verify GPT writes to disk\n");
@@ -86,7 +86,7 @@ int main(){
   }
   struct partTable* partTable2 = readPartTable( GPTHeader2, deviceFile);
   if( !verifyPartTable(GPTHeader2, partTable2) ){
-    printf("Test 03: Primary Part Table corrupted\n");
+    printf("Test 03: Secondary Part Table corrupted\n");
     return 0;
   }
   printf("Test 03: Passed\n\n");
@@ -103,7 +103,30 @@ int main(){
 
 
 
-  //printf("Test 05: Corrupt Primary Header\n");
+  printf("Test 05: Corrupt Primary Header\n");
+  char garbage[100] = "lkfsdalkfjklajsdklfjklsadjfkljaskldjfkllasdjfklj";
+  fseek( deviceFile, 512 , SEEK_SET );
+  fwrite( garbage, 1, 100, deviceFile );
+  free(GPTHeader1);
+  free(GPTHeader2);
+  GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
+  GPTHeader2 = calloc(1,sizeof(struct GPTHeader));
+  readGPT(GPTHeader2, deviceFile, getSecondaryHeaderOffset(deviceFile) );
+  partTable1 = readPartTable( GPTHeader1, deviceFile);
+  partTable2 = readPartTable( GPTHeader2, deviceFile);
+  genHeaderFromBackup(GPTHeader1, partTable1, GPTHeader2, partTable2);
+  writeGPT( GPTHeader1, deviceFile, getPrimaryHeaderOffset(deviceFile) );
+  free(GPTHeader1);
+  free(GPTHeader2);
+  GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
+  readGPT(GPTHeader1, deviceFile, getPrimaryHeaderOffset() );
+  if( !verifyGPT(GPTHeader1) ){
+    printf("Test 05: Primary header could not be repaired\n");
+    return 0;
+  } 
+  printf("Test 05: Passed\n\n");
+
+
 
 
   fclose(deviceFile);

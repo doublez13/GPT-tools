@@ -129,28 +129,39 @@ void charToGPTHeader(struct GPTHeader *dst, char *src){
   memcpy( &dst->crc32Part,   src + 88,  4 );
 }
 
-/*
-void genHeaderFromBackup(struct GPTHeader *new, struct GPTHeader *working){
+void genHeaderFromBackup(struct GPTHeader *new ,struct partTable *newTable, 
+struct GPTHeader *working, struct partTable *workingTable){
+  uint64_t LBAstart = 2;
+  //uint32_t partTableLength = working->numParts * working->singleSize;
+  
 
-  if(working->LBAstart == 2)
+  if(working->LBA1 == 1){
+    LBAstart = (working->LBA2) - LBA_SIZE;
+  }
 
   memcpy( &new->signature,   &working->signature,  8 );
-  memcpy( &new->signature,   &working->signature,  4 );
+  memcpy( &new->revision,    &working->revision,  4 );
   new->headerSize  = working->headerSize;
   new->crc32       = 0;
   new->reserved    = working->reserved;
-  new->LBA1        = working->LBA2
-  new->LBA2        = working->LBA1
-  new->LBApart     =
-  new->LBApartLast =
-  new->GUID        =
-  new->LBAstart    =
-  new->numParts    = working->numParts 
-  new->singleSize  = working->numParts 
-  new->crc32Part   = 
+  new->LBA1        = working->LBA2;
+  new->LBA2        = working->LBA1;
+  new->LBApart     = working->LBApart;
+  new->LBApartLast = working->LBApartLast;
+  memcpy( &new->GUID,   &working->GUID,  16 );
+  new->LBAstart    = LBAstart;
+  new->numParts    = working->numParts;
+  new->singleSize  = working->singleSize;
+  new->crc32Part   = working->crc32Part;
 
+  new->crc32 = crc32GPT(new);
+
+  //Copy the valid part table
+  //CURRENTLY DONT HAVE CODE TO WRITE THIS BACK TO DISK
+  newTable->numParts = workingTable->numParts;
+  newTable->singleSize = workingTable->singleSize;
+  memcpy( newTable->entries,  workingTable->entries,  sizeof(struct partEntry)*newTable->numParts );
 }
-*/
 
 
 

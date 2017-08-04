@@ -120,6 +120,9 @@ void partTableToChar(char* charTable, struct partTable *table);
 
 void createPartTable(struct partTable *table);
 
+void genHeaderFromBackup(struct GPTHeader *new ,struct partTable *newTable,
+struct GPTHeader *working, struct partTable *workingTable);
+
 int createPart();
 //Simply zero out the partition entry on disk.
 int deletePart();
