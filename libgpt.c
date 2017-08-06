@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
+#include <linux/kernel.h>
 #include "include/libgpt.h"
 
 #define HEADER_SIZE 512
@@ -319,10 +320,34 @@ void writeCharPartTable(char *srcTable, uint64_t tableSize, FILE *deviceFile, ui
 
 
 
-void createPartTable(struct partTable *table);
 
 
-int createPart();
+int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name){
+  uint32_t numParts;   //Number of partition entries. Found in GPT
+  //uint32_t singleSize; //Size of a single partition entry. Found in GPT
+  uint32_t partNum;
+  struct partEntry *newPart;
+  numParts   = table->numParts;
+  //singleSize = table->singleSize;
+  
+  if( strlen(name) > 72 ){return -1;}
+
+  for(partNum = 0; partNum < numParts; partNum++){
+    newPart = &table->entries[partNum];
+    if( (newPart->firstLBA & newPart->lastLBA & newPart->flags) == 0)
+      break;
+  }
+  
+  strcpy(newPart->typeGUID, "0");
+  strcpy(newPart->partGUID, "0");
+  newPart->firstLBA = stLBA;
+  newPart->lastLBA  = endLBA;
+  newPart->flags    = flags;
+  strcpy(newPart->name, name);
+ 
+  return 0;
+}
+
 
 
 //Simply zero out the partition entry on disk.

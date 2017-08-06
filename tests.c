@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 int main(){
   FILE *deviceFile;
-  char path[10] = "/dev/sdb";
+  char path[10] = "/dev/sdc";
   
   if(access(path, F_OK)){
     printf("Device %s not found \n", path);
@@ -172,9 +172,23 @@ int main(){
     printf("Test 06: Primary partition table could not be repaired\n");
     return 0;
   }
-
+  free(GPTHeader1);
   printf("Test 06: Passed\n\n");
 
+  
+
+  printf("Test 07: Creating a new Partition\n");
+  GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
+  GPTHeader2 = calloc(1,sizeof(struct GPTHeader));
+  readGPT(GPTHeader1, deviceFile, getPrimaryHeaderOffset() );
+  readGPT(GPTHeader2, deviceFile, getSecondaryHeaderOffset(deviceFile) );
+
+  partTable1 = readPartTable( GPTHeader1, deviceFile);
+  createPart(partTable1, 40, 99999, 0, "TEST PART\0");
+  writePartTable(GPTHeader1,  getPrimaryHeaderOffset(), partTable1, deviceFile);
+  writePartTable(GPTHeader2,  getSecondaryHeaderOffset(deviceFile), partTable1, deviceFile);
+  free(GPTHeader1);
+  free(GPTHeader2);
 
   fclose(deviceFile);
   printf("ALL TESTS PASSED\n");

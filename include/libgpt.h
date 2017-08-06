@@ -123,12 +123,12 @@ void writePartTable(struct GPTHeader *header, uint64_t offset, struct partTable 
 void writeCharPartTable(char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
 
 
-void createPartTable(struct partTable *table);
+//void createPartTable(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name);
 
 void genHeaderFromBackup(struct GPTHeader *new ,struct partTable *newTable,
 struct GPTHeader *working, struct partTable *workingTable);
 
-int createPart();
+int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name);
 //Simply zero out the partition entry on disk.
 int deletePart();
 
