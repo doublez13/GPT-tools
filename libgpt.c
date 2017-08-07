@@ -18,9 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
-#include <linux/kernel.h>
 #include <uuid/uuid.h>
 #include "include/libgpt.h"
+#include "include/guids.h"
 
 #define HEADER_SIZE 512
 #define LBA_SIZE 512
