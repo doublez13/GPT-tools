@@ -334,8 +334,7 @@ int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_
 
   for(partNum = 0; partNum < numParts; partNum++){
     newPart = &table->entries[partNum];
-    if( (newPart->firstLBA & newPart->lastLBA & newPart->flags) == 0)
-      break;
+    if( (newPart->firstLBA | newPart->lastLBA | newPart->flags) == 0){break;}
   }
   
   strcpy(newPart->typeGUID, "0");
