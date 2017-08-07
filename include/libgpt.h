@@ -28,9 +28,9 @@ struct GPTHeader{
   uint32_t crc32;        //different for primary and backup
   uint32_t reserved;
   uint64_t LBA1, LBA2;   //swapped for backup
-  uint64_t LBApart, LBApartLast; //different for primary and backup
+  uint64_t LBAfirstUse, LBAlastUse; //different for primary and backup
   char     GUID[16];
-  uint64_t LBAstart;     //LBA of partition entries. Different on Pr and Ba
+  uint64_t LBApartStart;     //LBA of partition entries. Different on Pr and Ba
   uint32_t numParts;
   uint32_t singleSize;
   uint32_t crc32Part;
@@ -82,12 +82,11 @@ int writeGPT(struct GPTHeader *header, FILE *deviceFile, uint64_t offset);
 void GPTHeaderToChar(char *dst, struct GPTHeader *src);
 
 
-
 /*
 Builds a fresh GPTHeader pair
 No Return value
 */
-void buildGPT(struct GPTHeader *GPTHeader1);
+struct partTable* buildGPT(struct GPTHeader *primary, struct GPTHeader *backup, uint64_t maxLBA);
 
 
 
