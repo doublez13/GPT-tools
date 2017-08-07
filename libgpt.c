@@ -24,6 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define HEADER_SIZE 512
 #define LBA_SIZE 512
 
+//THIS CODE IS NOT ENDIAN SAFE
+//LITTLE ENDIAN ONLY AT THIS POINT
+//FIX INBOUND
+
 
 /*
 Return 1 if the device is GPT
