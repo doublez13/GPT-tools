@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 #include <zlib.h>
 #include <linux/kernel.h>
+#include <uuid/uuid.h>
 #include "include/libgpt.h"
 
 #define HEADER_SIZE 512
@@ -363,33 +364,71 @@ void writeCharPartTable(char *srcTable, uint64_t tableSize, FILE *deviceFile, ui
 
 int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name){
   uint32_t numParts;   //Number of partition entries. Found in GPT
-  //uint32_t singleSize; //Size of a single partition entry. Found in GPT
   uint32_t partNum;
   struct partEntry *newPart;
   numParts   = table->numParts;
-  //singleSize = table->singleSize;
   
-  if( strlen(name) > 72 ){return -1;}
-
   for(partNum = 0; partNum < numParts; partNum++){
     newPart = &table->entries[partNum];
     if( (newPart->firstLBA | newPart->lastLBA | newPart->flags) == 0){break;}
   }
+
+  char *UTF16name = (char *)calloc(1, 72);
+  int c;
+  for(c=0; c<72; c++){
+    if(name[c] == '\0'){break;}
+    UTF16name[2*c] = name[c];
+  }
+
+  /*
+   * I was hoping that TT's libuuid had all the uuid manipulating power
+   * However, as I can see from Rod Smith's gdisk code, manual bit flipping
+   * is required :(
+   */ 
+  uuid_t partGUID;
+  uuid_generate(partGUID);
+  char charPartUUID[16];
+  uuid_to_char(charPartUUID, partGUID);
   
-  strcpy(newPart->typeGUID, "0");
-  strcpy(newPart->partGUID, "0");
+  char UUIDlinux[37] = "0FC63DAF-8483-4772-8E79-3D69D8477DE4\0"; 
+  uuid_t typeGUID;
+  if(uuid_parse(UUIDlinux, typeGUID))
+    return -1;
+  char charUUID[16];
+  uuid_to_char(charUUID, typeGUID);
+
+
+  memcpy(newPart->typeGUID, charUUID, 16);
+  memcpy(newPart->partGUID, charPartUUID, 16);
   newPart->firstLBA = stLBA;
   newPart->lastLBA  = endLBA;
   newPart->flags    = flags;
-  strcpy(newPart->name, name);
+  memcpy(newPart->name, UTF16name, 72);
  
   return 0;
 }
 
+void uuid_to_char(char* out, uuid_t in){
+  memcpy(out, in, 16);
+  char temp;
+  temp   = out[0];
+  out[0] = out[3];
+  out[3] = temp;
+  temp   = out[1];
+  out[1] = out[2];
+  out[2] = temp;
+  temp   = out[4];
+  out[4] = out[5];
+  out[5] = temp;
+  temp   = out[6];
+  out[6] = out[7];
+  out[7] = temp;
+}
 
 
 //Simply zero out the partition entry on disk.
-int deletePart( struct partTable *table);
+//
+int deletePart( struct partTable *table, char* partGUID);
 
 
 int verifyPartTable(struct GPTHeader *header, struct partTable *table){

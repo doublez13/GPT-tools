@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <uuid/uuid.h>
 
 #define HEADER_SIZE 512
 #define LBA_SIZE 512
@@ -128,8 +129,8 @@ void genHeaderFromBackup(struct GPTHeader *new ,struct partTable *newTable,
 struct GPTHeader *working, struct partTable *workingTable);
 
 int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name);
-//Simply zero out the partition entry on disk.
-int deletePart();
+void uuid_to_char(char* out, uuid_t in);
+int deletePart( struct partTable *table, char* partGUID);
 
 int verifyPartTable(struct GPTHeader *header, struct partTable *table);
 uint32_t crc32PartTable(struct partTable *table);
