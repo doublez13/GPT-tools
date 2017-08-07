@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 int main(){
   FILE *deviceFile;
-  char path[10] = "/dev/sdc";
+  char path[10] = "/dev/sdb";
   
   if(access(path, F_OK)){
     printf("Device %s not found \n", path);
@@ -184,7 +184,10 @@ int main(){
   readGPT(GPTHeader2, deviceFile, getSecondaryHeaderOffset(deviceFile) );
 
   partTable1 = readPartTable( GPTHeader1, deviceFile);
-  createPart(partTable1, 40, 99999, 0, "TEST PART\0");
+  if(createPart(partTable1, 2048, 99999, 0, "TEST PART\0")){
+    printf("TEST 07: Failed to create the partition\n");
+    return -1;
+  }
   writePartTable(GPTHeader1,  getPrimaryHeaderOffset(), partTable1, deviceFile);
   writePartTable(GPTHeader2,  getSecondaryHeaderOffset(deviceFile), partTable1, deviceFile);
   free(GPTHeader1);
