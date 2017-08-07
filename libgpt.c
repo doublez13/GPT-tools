@@ -428,7 +428,14 @@ void uuid_to_char(char* out, uuid_t in){
 
 //Simply zero out the partition entry on disk.
 //
-int deletePart( struct partTable *table, char* partGUID);
+//int deletePart( struct partTable *table, uuid_t partGUID){
+//  uint32_t part;
+//  struct partEntry *current;
+//  for(part=0; part<table->numParts; part++){
+//    current = &table->entries[part];
+//    if(!uuid_compare(partGUID, uuid_t uu2))
+//  }
+//}
 
 
 int verifyPartTable(struct GPTHeader *header, struct partTable *table){
