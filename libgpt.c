@@ -425,6 +425,10 @@ void uuid_to_char(char* out, uuid_t in){
   out[7] = temp;
 }
 
+void char_to_uuid(uuid_t out, char* in){
+  
+}
+
 
 //Simply zero out the partition entry on disk.
 //

@@ -130,6 +130,7 @@ struct GPTHeader *working, struct partTable *workingTable);
 
 int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name);
 void uuid_to_char(char* out, uuid_t in);
+void char_to_uuid(uuid_t out, char* in);
 int deletePart( struct partTable *table, uuid_t partGUID);
 
 int verifyPartTable(struct GPTHeader *header, struct partTable *table);
