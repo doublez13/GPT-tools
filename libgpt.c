@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define HEADER_SIZE 512
 #define LBA_SIZE 512
+#define EFI_SIG "EFI PART"
 
 //THIS CODE IS NOT ENDIAN SAFE
 //LITTLE ENDIAN ONLY AT THIS POINT
@@ -35,36 +36,38 @@ Return 1 if the device is GPT
 Return 0 otherwise
 This function checks both the default and backup GPT headers.
 */
-int isGPT(FILE *deviceFile){
+int isGPT(FILE *deviceFile)
+{
   uint64_t offset = LBA_SIZE;
-  char gptSig[9] = "EFI PART";
+  char gptSig[9] = EFI_SIG;
   char diskSig[9];
-  diskSig[8] = '\0';
-  int GPT1 = 0;
-  int GPT2 = 0;
- 
+
+  diskSig[8] = '\0'; 
   //Header 1 
-  fseek( deviceFile, offset , SEEK_SET );
+  fseek(deviceFile, offset ,SEEK_SET);
   fread(diskSig, 1, 8, deviceFile);
-  if(strcmp(gptSig, diskSig) == 0){GPT1 = 1;}
+  if(strcmp(gptSig, diskSig) == 0)
+    return 1;
 
   //Header 2
   offset = getSecondaryHeaderOffset( deviceFile );
-  //printf(offset)
-  fseek( deviceFile, offset , SEEK_SET );
+  fseek(deviceFile, offset ,SEEK_SET);
   fread(diskSig, 1, 8, deviceFile);
-  if(strcmp(gptSig, diskSig) == 0){GPT2 = 1;}
+  if(strcmp(gptSig, diskSig) == 0)
+    return 1;
   
-  return GPT1 | GPT2;
+  return 0;
 }
 
 
-uint64_t getPrimaryHeaderOffset(){
+uint64_t getPrimaryHeaderOffset()
+{
   return LBA_SIZE;  
 }
 
 
-uint64_t getSecondaryHeaderOffset( FILE *deviceFile ){
+uint64_t getSecondaryHeaderOffset( FILE *deviceFile )
+{
   fseek(deviceFile, 0, SEEK_END);
   return ftell(deviceFile) - HEADER_SIZE;
 }
@@ -74,7 +77,8 @@ uint64_t getSecondaryHeaderOffset( FILE *deviceFile ){
 Returns 1 if the calculated CRC32 matches the on disk CRC32
 Returns 0 otherwise
 */
-int verifyGPT(struct GPTHeader *header){
+int verifyGPT(struct GPTHeader *header)
+{
   return header->crc32 == crc32GPT(header);
 }
 
@@ -82,7 +86,8 @@ int verifyGPT(struct GPTHeader *header){
 /*
  *Returns the crc32 value for the GPTHeader header
  */
-uint32_t crc32GPT(struct GPTHeader *header){
+uint32_t crc32GPT(struct GPTHeader *header)
+{
   char *charHeader;
   struct GPTHeader *copyHeader;
   uint32_t crc;
@@ -104,7 +109,8 @@ uint32_t crc32GPT(struct GPTHeader *header){
  *Populates header with the GPT header found in deviceFile at offset
  *
  */
-void readGPT(struct GPTHeader *header, FILE *deviceFile, uint64_t offset){
+void readGPT(struct GPTHeader *header, FILE *deviceFile, uint64_t offset)
+{
   char *charHeader = (char *)calloc(1, HEADER_SIZE);
   readCharGPT(charHeader, deviceFile, offset);
   charToGPTHeader(header, charHeader);
@@ -112,20 +118,23 @@ void readGPT(struct GPTHeader *header, FILE *deviceFile, uint64_t offset){
 }
 
 
-void readCharGPT(char *dstHeader, FILE *deviceFile, uint64_t offset){
+void readCharGPT(char *dstHeader, FILE *deviceFile, uint64_t offset)
+{
   fseek( deviceFile, offset , SEEK_SET );
   fread( dstHeader, 1, HEADER_SIZE, deviceFile );
 }
 
 
 void genHeaderFromBackup(struct GPTHeader *new ,struct partTable *newTable, 
-struct GPTHeader *working, struct partTable *workingTable){
+struct GPTHeader *working, struct partTable *workingTable)
+{
   uint64_t LBApartStart = 2;
   if(working->LBA1 == 1)
     LBApartStart = working->LBAlastUse + 1; //Is this always safe? alignment issues?
 
-  memcpy( &new->signature,   &working->signature,  8 );
-  memcpy( &new->revision,    &working->revision,  4 );
+  memcpy( &new->signature, &working->signature, 8 );
+  memcpy( &new->revision,  &working->revision,  4 );
+  memcpy( &new->GUID,      &working->GUID,     16 );
   new->headerSize   = working->headerSize;
   new->crc32        = 0;
   new->reserved     = working->reserved;
@@ -133,7 +142,6 @@ struct GPTHeader *working, struct partTable *workingTable){
   new->LBA2         = working->LBA1;
   new->LBAfirstUse  = working->LBAfirstUse;
   new->LBAlastUse   = working->LBAlastUse;
-  memcpy( &new->GUID,   &working->GUID,  16 );
   new->LBApartStart = LBApartStart;
   new->numParts     = working->numParts;
   new->singleSize   = working->singleSize;
@@ -141,9 +149,9 @@ struct GPTHeader *working, struct partTable *workingTable){
   new->crc32        = crc32GPT(new);
 
   //Copy the valid part table
-  newTable->numParts = workingTable->numParts;
+  newTable->numParts   = workingTable->numParts;
   newTable->singleSize = workingTable->singleSize;
-  memcpy( newTable->entries,  workingTable->entries,  sizeof(struct partEntry)*newTable->numParts );
+  memcpy(newTable->entries, workingTable->entries, sizeof(struct partEntry)*newTable->numParts);
 }
 
 
@@ -151,7 +159,8 @@ struct GPTHeader *working, struct partTable *workingTable){
  * Writes the GPT found in the struct GPTHeader to disk at byte offset
  * Returns 0 on clean write, -1 on failure
  **/
-int writeGPT(struct GPTHeader *header, FILE *deviceFile, uint64_t offset){
+int writeGPT(struct GPTHeader *header, FILE *deviceFile, uint64_t offset)
+{
   char* charHeader = (char *)calloc(1, HEADER_SIZE);
   int result;
 
@@ -167,17 +176,20 @@ int writeGPT(struct GPTHeader *header, FILE *deviceFile, uint64_t offset){
  * This does not alter the partition table
  * Returns 0 on clean write, -1 on failure
  * */
-int writeCharGPT(char *srcHeader, FILE *deviceFile, uint64_t offset){
+int writeCharGPT(char *srcHeader, FILE *deviceFile, uint64_t offset)
+{
   int ret;
   fseek( deviceFile, offset , SEEK_SET );
   ret = fwrite( srcHeader, 1, HEADER_SIZE, deviceFile );
 
-  if( ret == HEADER_SIZE){return 0;}
+  if(ret == HEADER_SIZE)
+    return 0;
   return -1;
 }
 
 
-void GPTHeaderToChar(char *dst, struct GPTHeader *src){
+void GPTHeaderToChar(char *dst, struct GPTHeader *src)
+{
   memcpy( dst +  0, &src->signature,    8 );
   memcpy( dst +  8, &src->revision,     4 );
   memcpy( dst + 12, &src->headerSize,   4 );
@@ -187,7 +199,7 @@ void GPTHeaderToChar(char *dst, struct GPTHeader *src){
   memcpy( dst + 32, &src->LBA2,         8 );
   memcpy( dst + 40, &src->LBAfirstUse,  8 );
   memcpy( dst + 48, &src->LBAlastUse,   8 );
-  memcpy( dst + 56, &src->GUID,        16 );
+  uuid_to_char((unsigned char*)(dst + 56), (unsigned char*)src->GUID);
   memcpy( dst + 72, &src->LBApartStart, 8 );
   memcpy( dst + 80, &src->numParts,     4 );
   memcpy( dst + 84, &src->singleSize,   4 );
@@ -195,7 +207,8 @@ void GPTHeaderToChar(char *dst, struct GPTHeader *src){
 }
 
 
-void charToGPTHeader(struct GPTHeader *dst, char *src){
+void charToGPTHeader(struct GPTHeader *dst, char *src)
+{
   memcpy( &dst->signature,    src +  0,  8 );
   memcpy( &dst->revision,     src +  8,  4 );
   memcpy( &dst->headerSize,   src + 12,  4 );
@@ -205,7 +218,7 @@ void charToGPTHeader(struct GPTHeader *dst, char *src){
   memcpy( &dst->LBA2,         src + 32,  8 );
   memcpy( &dst->LBAfirstUse,  src + 40,  8 );
   memcpy( &dst->LBAlastUse,   src + 48,  8 );
-  memcpy( &dst->GUID,         src + 56, 16 );
+  char_to_uuid( (unsigned char*)dst->GUID, (unsigned char*)(src + 56) );
   memcpy( &dst->LBApartStart, src + 72,  8 );
   memcpy( &dst->numParts,     src + 80,  4 );
   memcpy( &dst->singleSize,   src + 84,  4 );
@@ -218,18 +231,20 @@ Builds a fresh GPTHeader pair and partition table
 No Return value
 maxLBA exclusive
 */
-struct partTable* buildGPT(struct GPTHeader *primary, struct GPTHeader *backup, uint64_t maxLBA){
+struct partTable* buildGPT(struct GPTHeader *primary, struct GPTHeader *backup, uint64_t maxLBA)
+{
   uint32_t numParts    = 128;
   uint32_t singleSize  = 128;
+  char revision[4]     = {0x00, 0x00, 0x01, 0x00};
+  uuid_t partGUID;
   struct partTable *pt = (struct partTable*)calloc(1, sizeof(struct partTable) );
   pt->entries          = (struct partEntry*)calloc(1, numParts*sizeof(struct partEntry) ); 
 
-  strcpy(primary->signature, "EFI PART");
-  strcpy(backup->signature,  "EFI PART");
+  strcpy(primary->signature, EFI_SIG);
+  strcpy(backup->signature,  EFI_SIG);
   
-  char revision[4] = {0x00, 0x00, 0x01, 0x00};
-  memcpy( primary->revision, revision, 4 );
-  memcpy( primary->revision, revision, 4 );  
+  memcpy(primary->revision, revision, 4);
+  memcpy(primary->revision, revision, 4);  
 
   primary->headerSize   = 92;   //92 in most cases. 512-92 is just 0s
   backup->headerSize    = primary->headerSize;
@@ -250,8 +265,9 @@ struct partTable* buildGPT(struct GPTHeader *primary, struct GPTHeader *backup, 
   primary->LBAlastUse   = maxLBA - (1 + numParts * singleSize / LBA_SIZE); 
   backup->LBAlastUse    = primary->LBAlastUse;
 
-  //primary->GUID         = ;
-  //backup->GUID          = ;
+  uuid_generate(partGUID);
+  memcpy(primary->GUID, partGUID, 16);
+  memcpy(backup->GUID,  partGUID, 16);
 
   primary->LBApartStart = 2;     //LBA of partition entries. Different on Pr and Ba
   backup->LBApartStart  = primary->LBAlastUse + 1;
@@ -274,7 +290,8 @@ struct partTable* buildGPT(struct GPTHeader *primary, struct GPTHeader *backup, 
 
 ////////////////PARTITON FUNCTIONS////////////////
 
-struct partTable* readPartTable(struct GPTHeader *header, FILE *deviceFile){
+struct partTable* readPartTable(struct GPTHeader *header, FILE *deviceFile)
+{
   uint32_t numParts;   //Number of partition entries. Found in GPT
   uint32_t singleSize; //Size of a single partition entry. Found in GPT
   struct   partTable *table;
@@ -286,12 +303,12 @@ struct partTable* readPartTable(struct GPTHeader *header, FILE *deviceFile){
   numParts   = header->numParts;
   singleSize = header->singleSize;
   table = (struct partTable*)calloc(1, sizeof(struct partTable) );
-  table->entries = (struct partEntry*)calloc(1, numParts*sizeof(struct partEntry) );
+  table->entries = (struct partEntry*)calloc(1, numParts*sizeof(struct partEntry));
   table->numParts   = numParts; 
   table->singleSize = singleSize;
 
   tableSize =  numParts*singleSize;
-  charTable = (char*)malloc( tableSize ); 
+  charTable = (char*)malloc(tableSize); 
   offset    =  header->LBApartStart*LBA_SIZE;
   readCharPartTable(charTable, tableSize, deviceFile, offset); 
 
@@ -302,7 +319,8 @@ struct partTable* readPartTable(struct GPTHeader *header, FILE *deviceFile){
 }
 
 
-void writePartTable(struct GPTHeader *header,  uint64_t headerOffset, struct partTable *table, FILE *deviceFile){
+void writePartTable(struct GPTHeader *header,  uint64_t headerOffset, struct partTable *table, FILE *deviceFile)
+{
   char *charTable;
   uint32_t crc32Part = crc32PartTable(table);
   uint64_t offset    = header->LBApartStart * LBA_SIZE;
@@ -318,27 +336,32 @@ void writePartTable(struct GPTHeader *header,  uint64_t headerOffset, struct par
 }
 
 
-void readCharPartTable(char *dstTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset){
-  fseek( deviceFile, offset , SEEK_SET );
-  fread( dstTable, 1, tableSize, deviceFile );
+void readCharPartTable(char *dstTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset)
+{
+  fseek(deviceFile, offset , SEEK_SET);
+  fread(dstTable, 1, tableSize, deviceFile);
 }
 
 
-void writeCharPartTable(char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset){
-  fseek( deviceFile, offset , SEEK_SET );
-  fwrite( srcTable, 1, tableSize, deviceFile );
+void writeCharPartTable(char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset)
+{
+  fseek(deviceFile, offset , SEEK_SET);
+  fwrite(srcTable, 1, tableSize, deviceFile);
 }
 
 
-int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name){
+int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name)
+{
   uint32_t numParts;   //Number of partition entries. Found in GPT
   uint32_t partNum;
   struct partEntry *newPart;
   numParts   = table->numParts;
   
+  //Make this into a helper function
   for(partNum = 0; partNum < numParts; partNum++){
     newPart = &table->entries[partNum];
-    if( (newPart->firstLBA | newPart->lastLBA | newPart->flags) == 0){break;}
+    if((newPart->firstLBA | newPart->lastLBA | newPart->flags) == 0)
+      break;
   }
 
   char *UTF16name = (char *)calloc(1, 72);
@@ -373,7 +396,8 @@ int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_
 }
 
 
-int deletePart( struct partTable *table, char* strGUID){
+int deletePart( struct partTable *table, char* strGUID)
+{
   uint32_t part;
   struct partEntry *current;
   uuid_t partGUID;
@@ -383,8 +407,8 @@ int deletePart( struct partTable *table, char* strGUID){
   for(part=0; part<table->numParts; part++){
     current = &table->entries[part];
     if(uuid_compare(partGUID, current->partGUID) == 0){
-      struct partEntry* new = (struct partEntry*)calloc(1, sizeof(struct partEntry) );
-      memcpy(current, new, sizeof(struct partEntry) ); 
+      struct partEntry* new = (struct partEntry*)calloc(1, sizeof(struct partEntry));
+      memcpy(current, new, sizeof(struct partEntry)); 
       return 0;
     }
   }
@@ -394,9 +418,10 @@ int deletePart( struct partTable *table, char* strGUID){
 }
 
 
-void uuid_to_char(unsigned char* out, uuid_t in){
+void uuid_to_char(unsigned char* out, uuid_t in)
+{
   memcpy(out, in, 16);
-  char temp;
+  unsigned char temp;
   temp   = out[0];
   out[0] = out[3];
   out[3] = temp;
@@ -412,17 +437,20 @@ void uuid_to_char(unsigned char* out, uuid_t in){
 }
 
 
-void char_to_uuid(uuid_t out, unsigned char* in){
+void char_to_uuid(uuid_t out, unsigned char* in)
+{
   uuid_to_char(out, in);
 }
 
 
-int verifyPartTable(struct GPTHeader *header, struct partTable *table){
+int verifyPartTable(struct GPTHeader *header, struct partTable *table)
+{
   return header->crc32Part == crc32PartTable(table);
 }
 
 
-uint32_t crc32PartTable(struct partTable *table){
+uint32_t crc32PartTable(struct partTable *table)
+{
   char *charTable;
   charTable = (char *)calloc(1, 128*128);
   partTableToChar(charTable, table); 
@@ -430,16 +458,17 @@ uint32_t crc32PartTable(struct partTable *table){
 }
 
 
-void partTableToChar(char* charTable, struct partTable *table){
+void partTableToChar(char* charTable, struct partTable *table)
+{
   uint64_t entNum = 0;
   struct partEntry *entries = table->entries;
-  for(entNum=0; entNum < (table->numParts); entNum++){
+  for(entNum=0; entNum < (table->numParts); entNum++)
     partEntryToChar(charTable, &(entries[entNum]), 128*entNum, table->singleSize);
-  }
 }
 
 
-void charToPartEntry(struct partEntry *entry, char* charTable, uint64_t start, uint32_t length){
+void charToPartEntry(struct partEntry *entry, char* charTable, uint64_t start, uint32_t length)
+{
   //we're not making use of length right now
   char_to_uuid( (unsigned char*)entry->typeGUID, (unsigned char*)(charTable + start +  0) ); 
   char_to_uuid( (unsigned char*)entry->partGUID, (unsigned char*)(charTable + start + 16) );
@@ -450,7 +479,8 @@ void charToPartEntry(struct partEntry *entry, char* charTable, uint64_t start, u
 }
 
 
-void partEntryToChar(char* charTable, struct partEntry *entry, uint64_t start, uint32_t length){
+void partEntryToChar(char* charTable, struct partEntry *entry, uint64_t start, uint32_t length)
+{
   uuid_to_char( (unsigned char*)(charTable + start +  0), (unsigned char*)entry->typeGUID);
   uuid_to_char( (unsigned char*)(charTable + start + 16), (unsigned char*)entry->partGUID);
   memcpy( charTable + start + 32, &entry->firstLBA,   8 );

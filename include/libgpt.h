@@ -30,7 +30,7 @@ struct GPTHeader{
   uint32_t reserved;
   uint64_t LBA1, LBA2;   //swapped for backup
   uint64_t LBAfirstUse, LBAlastUse; //different for primary and backup
-  char     GUID[16];
+  uuid_t   GUID;
   uint64_t LBApartStart;     //LBA of partition entries. Different on Pr and Ba
   uint32_t numParts;
   uint32_t singleSize;

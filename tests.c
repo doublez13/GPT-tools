@@ -185,7 +185,7 @@ int main(){
 
   partTable1 = readPartTable( GPTHeader1, deviceFile);
   if(createPart(partTable1, 2048, 99999, 0, "TEST PART\0")){
-    printf("TEST 07: Failed to create the partition\n");
+    printf("Test 07: Failed to create the partition\n");
     return -1;
   }
   writePartTable(GPTHeader1,  getPrimaryHeaderOffset(), partTable1, deviceFile);
@@ -203,7 +203,7 @@ int main(){
 
   partTable1 = readPartTable( GPTHeader1, deviceFile);
   if( deletePart( partTable1, "FAB11E4D-BFF7-4D1B-8A64-8F6A053DB907" ) ){
-    printf("TEST 08: Failed to create the partition\n");
+    printf("Test 08: Failed to delete the partition\n");
     return -1;
   }
   writePartTable(GPTHeader1,  getPrimaryHeaderOffset(), partTable1, deviceFile);
