@@ -118,24 +118,6 @@ void readCharGPT(char *dstHeader, FILE *deviceFile, uint64_t offset){
 }
 
 
-void charToGPTHeader(struct GPTHeader *dst, char *src){
-  memcpy( &dst->signature,    src +  0,  8 );
-  memcpy( &dst->revision,     src +  8,  4 );
-  memcpy( &dst->headerSize,   src + 12,  4 );
-  memcpy( &dst->crc32,        src + 16,  4 );
-  memcpy( &dst->reserved,     src + 20,  4 );
-  memcpy( &dst->LBA1,         src + 24,  8 );
-  memcpy( &dst->LBA2,         src + 32,  8 );
-  memcpy( &dst->LBAfirstUse,  src + 40,  8 );
-  memcpy( &dst->LBAlastUse,   src + 48,  8 );
-  memcpy( &dst->GUID,         src + 56, 16 );
-  memcpy( &dst->LBApartStart, src + 72,  8 );
-  memcpy( &dst->numParts,     src + 80,  4 );
-  memcpy( &dst->singleSize,   src + 84,  4 );
-  memcpy( &dst->crc32Part,    src + 88,  4 );
-}
-
-
 void genHeaderFromBackup(struct GPTHeader *new ,struct partTable *newTable, 
 struct GPTHeader *working, struct partTable *workingTable){
   uint64_t LBApartStart = 2;
@@ -156,8 +138,7 @@ struct GPTHeader *working, struct partTable *workingTable){
   new->numParts     = working->numParts;
   new->singleSize   = working->singleSize;
   new->crc32Part    = working->crc32Part;
-
-  new->crc32 = crc32GPT(new);
+  new->crc32        = crc32GPT(new);
 
   //Copy the valid part table
   newTable->numParts = workingTable->numParts;
@@ -211,6 +192,24 @@ void GPTHeaderToChar(char *dst, struct GPTHeader *src){
   memcpy( dst + 80, &src->numParts,     4 );
   memcpy( dst + 84, &src->singleSize,   4 );
   memcpy( dst + 88, &src->crc32Part,    4 );
+}
+
+
+void charToGPTHeader(struct GPTHeader *dst, char *src){
+  memcpy( &dst->signature,    src +  0,  8 );
+  memcpy( &dst->revision,     src +  8,  4 );
+  memcpy( &dst->headerSize,   src + 12,  4 );
+  memcpy( &dst->crc32,        src + 16,  4 );
+  memcpy( &dst->reserved,     src + 20,  4 );
+  memcpy( &dst->LBA1,         src + 24,  8 );
+  memcpy( &dst->LBA2,         src + 32,  8 );
+  memcpy( &dst->LBAfirstUse,  src + 40,  8 );
+  memcpy( &dst->LBAlastUse,   src + 48,  8 );
+  memcpy( &dst->GUID,         src + 56, 16 );
+  memcpy( &dst->LBApartStart, src + 72,  8 );
+  memcpy( &dst->numParts,     src + 80,  4 );
+  memcpy( &dst->singleSize,   src + 84,  4 );
+  memcpy( &dst->crc32Part,    src + 88,  4 );
 }
 
 
@@ -331,28 +330,6 @@ void writeCharPartTable(char *srcTable, uint64_t tableSize, FILE *deviceFile, ui
 }
 
 
-void charToPartEntry(struct partEntry *entry, char* charTable, uint64_t start, uint32_t length){
-  //we're not making use of length right now
-  memcpy( &entry->typeGUID,  charTable + start +  0,  16 );
-  memcpy( &entry->partGUID,  charTable + start + 16,  16 );
-  memcpy( &entry->firstLBA,  charTable + start + 32,   8 );
-  memcpy( &entry->lastLBA,   charTable + start + 40,   8 );
-  memcpy( &entry->flags,     charTable + start + 48,   8 );
-  memcpy( &entry->name,      charTable + start + 56,  72 );
-}
-
-
-void partEntryToChar(char* charTable, struct partEntry *entry, uint64_t start, uint32_t length){
-  memcpy( charTable + start +  0, &entry->typeGUID,  16 );
-  memcpy( charTable + start + 16, &entry->partGUID,  16 );
-  memcpy( charTable + start + 32, &entry->firstLBA,   8 );
-  memcpy( charTable + start + 40, &entry->lastLBA,    8 );
-  memcpy( charTable + start + 48, &entry->flags,      8 );
-  memcpy( charTable + start + 56, &entry->name,      72 );
-  //TODO: Fill remaining space (length -128) with zeros
-}
-
-
 int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name){
   uint32_t numParts;   //Number of partition entries. Found in GPT
   uint32_t partNum;
@@ -375,21 +352,18 @@ int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_
    * I was hoping that TT's libuuid had all the uuid manipulating power
    * However, as I can see from Rod Smith's gdisk code, manual bit flipping
    * is required :(
+   * Gonna save it for the char conversion methods.
    */ 
   uuid_t partGUID;
   uuid_generate(partGUID);
-  unsigned char charPartUUID[16];
-  uuid_to_char(charPartUUID, partGUID);
   
   char UUIDlinux[37] = "0FC63DAF-8483-4772-8E79-3D69D8477DE4\0"; 
   uuid_t typeGUID;
   if(uuid_parse(UUIDlinux, typeGUID))
     return -1;
-  unsigned char charUUID[16];
-  uuid_to_char(charUUID, typeGUID);
 
-  memcpy(newPart->typeGUID, charUUID, 16);
-  memcpy(newPart->partGUID, charPartUUID, 16);
+  memcpy(newPart->typeGUID, typeGUID, 16);
+  memcpy(newPart->partGUID, partGUID, 16);
   newPart->firstLBA = stLBA;
   newPart->lastLBA  = endLBA;
   newPart->flags    = flags;
@@ -399,14 +373,18 @@ int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_
 }
 
 
-int deletePart( struct partTable *table, uuid_t partGUID){
+int deletePart( struct partTable *table, char* strGUID){
   uint32_t part;
-  //struct partEntry *current;
+  struct partEntry *current;
+  uuid_t partGUID;
+
+  if(uuid_parse(strGUID, partGUID))
+    return -1;
   for(part=0; part<table->numParts; part++){
-    //current = &table->entries[part];
-    uuid_t currentUUID; //Do the conversion
-    if(uuid_compare(partGUID, currentUUID) == 0){
-      //zero out the part here
+    current = &table->entries[part];
+    if(uuid_compare(partGUID, current->partGUID) == 0){
+      struct partEntry* new = (struct partEntry*)calloc(1, sizeof(struct partEntry) );
+      memcpy(current, new, sizeof(struct partEntry) ); 
       return 0;
     }
   }
@@ -458,4 +436,26 @@ void partTableToChar(char* charTable, struct partTable *table){
   for(entNum=0; entNum < (table->numParts); entNum++){
     partEntryToChar(charTable, &(entries[entNum]), 128*entNum, table->singleSize);
   }
+}
+
+
+void charToPartEntry(struct partEntry *entry, char* charTable, uint64_t start, uint32_t length){
+  //we're not making use of length right now
+  char_to_uuid( (unsigned char*)entry->typeGUID, (unsigned char*)(charTable + start +  0) ); 
+  char_to_uuid( (unsigned char*)entry->partGUID, (unsigned char*)(charTable + start + 16) );
+  memcpy( &entry->firstLBA,  charTable + start + 32,   8 );
+  memcpy( &entry->lastLBA,   charTable + start + 40,   8 );
+  memcpy( &entry->flags,     charTable + start + 48,   8 );
+  memcpy( &entry->name,      charTable + start + 56,  72 );
+}
+
+
+void partEntryToChar(char* charTable, struct partEntry *entry, uint64_t start, uint32_t length){
+  uuid_to_char( (unsigned char*)(charTable + start +  0), (unsigned char*)entry->typeGUID);
+  uuid_to_char( (unsigned char*)(charTable + start + 16), (unsigned char*)entry->partGUID);
+  memcpy( charTable + start + 32, &entry->firstLBA,   8 );
+  memcpy( charTable + start + 40, &entry->lastLBA,    8 );
+  memcpy( charTable + start + 48, &entry->flags,      8 );
+  memcpy( charTable + start + 56, &entry->name,      72 );
+  //TODO: Fill remaining space (length -128) with zeros
 }

@@ -176,7 +176,7 @@ int main(){
   printf("Test 06: Passed\n\n");
 
   
-
+//FIX THESE TO GRAB THE GUID MADE HERE SO WE CAN DELETE IT LATER
   printf("Test 07: Creating a new Partition\n");
   GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
   GPTHeader2 = calloc(1,sizeof(struct GPTHeader));
@@ -192,6 +192,26 @@ int main(){
   writePartTable(GPTHeader2,  getSecondaryHeaderOffset(deviceFile), partTable1, deviceFile);
   free(GPTHeader1);
   free(GPTHeader2);
+
+
+
+  printf("Test 08: Deleting the Partition\n");
+  GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
+  GPTHeader2 = calloc(1,sizeof(struct GPTHeader));
+  readGPT(GPTHeader1, deviceFile, getPrimaryHeaderOffset() );
+  readGPT(GPTHeader2, deviceFile, getSecondaryHeaderOffset(deviceFile) );
+
+  partTable1 = readPartTable( GPTHeader1, deviceFile);
+  if( deletePart( partTable1, "FAB11E4D-BFF7-4D1B-8A64-8F6A053DB907" ) ){
+    printf("TEST 08: Failed to create the partition\n");
+    return -1;
+  }
+  writePartTable(GPTHeader1,  getPrimaryHeaderOffset(), partTable1, deviceFile);
+  writePartTable(GPTHeader2,  getSecondaryHeaderOffset(deviceFile), partTable1, deviceFile);
+  free(GPTHeader1);
+  free(GPTHeader2);
+
+
 
   fclose(deviceFile);
   printf("ALL TESTS PASSED\n");

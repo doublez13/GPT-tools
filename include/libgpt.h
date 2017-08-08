@@ -103,8 +103,8 @@ struct partTable{
 };
 
 struct partEntry{
-  char     typeGUID[16];
-  char     partGUID[16];
+  uuid_t   typeGUID;
+  uuid_t   partGUID;
   uint64_t firstLBA;
   uint64_t lastLBA;
   uint64_t flags;
@@ -131,7 +131,7 @@ struct GPTHeader *working, struct partTable *workingTable);
 int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name);
 void uuid_to_char(unsigned char* out, uuid_t in);
 void char_to_uuid(uuid_t out, unsigned char* in);
-int deletePart( struct partTable *table, uuid_t partGUID);
+int deletePart( struct partTable *table, char* strGUID);
 
 int verifyPartTable(struct GPTHeader *header, struct partTable *table);
 uint32_t crc32PartTable(struct partTable *table);
