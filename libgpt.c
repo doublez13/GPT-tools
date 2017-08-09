@@ -92,10 +92,10 @@ uint32_t crc32GPT(struct GPTHeader *header)
   struct GPTHeader *copyHeader;
   uint32_t crc;
 
-  copyHeader = (struct GPTHeader*)calloc(1, sizeof(struct GPTHeader));
+  copyHeader = calloc(1, sizeof(struct GPTHeader));
   memcpy( copyHeader, header,  sizeof(struct GPTHeader) );
   copyHeader->crc32 = 0;
-  charHeader = (char *)calloc(1, 92);
+  charHeader = calloc(1, 92);
   GPTHeaderToChar(charHeader, copyHeader);
   crc = crc32(0, (unsigned char*)charHeader, 92);
 
@@ -111,7 +111,7 @@ uint32_t crc32GPT(struct GPTHeader *header)
  */
 void readGPT(struct GPTHeader *header, FILE *deviceFile, uint64_t offset)
 {
-  char *charHeader = (char *)calloc(1, HEADER_SIZE);
+  char *charHeader = calloc(1, HEADER_SIZE);
   readCharGPT(charHeader, deviceFile, offset);
   charToGPTHeader(header, charHeader);
   free(charHeader);
@@ -161,7 +161,7 @@ struct GPTHeader *working, struct partTable *workingTable)
  **/
 int writeGPT(struct GPTHeader *header, FILE *deviceFile, uint64_t offset)
 {
-  char* charHeader = (char *)calloc(1, HEADER_SIZE);
+  char* charHeader = calloc(1, HEADER_SIZE);
   int result;
 
   GPTHeaderToChar(charHeader, header); 
@@ -237,8 +237,8 @@ struct partTable* buildGPT(struct GPTHeader *primary, struct GPTHeader *backup, 
   uint32_t singleSize  = 128;
   char revision[4]     = {0x00, 0x00, 0x01, 0x00};
   uuid_t partGUID;
-  struct partTable *pt = (struct partTable*)calloc(1, sizeof(struct partTable) );
-  pt->entries          = (struct partEntry*)calloc(1, numParts*sizeof(struct partEntry) ); 
+  struct partTable *pt = calloc(1, sizeof(struct partTable) );
+  pt->entries          = calloc(1, numParts*sizeof(struct partEntry) ); 
 
   strcpy(primary->signature, EFI_SIG);
   strcpy(backup->signature,  EFI_SIG);
@@ -302,18 +302,18 @@ struct partTable* readPartTable(struct GPTHeader *header, FILE *deviceFile)
 
   numParts   = header->numParts;
   singleSize = header->singleSize;
-  table = (struct partTable*)calloc(1, sizeof(struct partTable) );
-  table->entries = (struct partEntry*)calloc(1, numParts*sizeof(struct partEntry));
+  table = calloc(1, sizeof(struct partTable) );
+  table->entries = calloc(1, numParts*sizeof(struct partEntry));
   table->numParts   = numParts; 
   table->singleSize = singleSize;
 
-  tableSize =  numParts*singleSize;
-  charTable = (char*)malloc(tableSize); 
-  offset    =  header->LBApartStart*LBA_SIZE;
+  tableSize = numParts*singleSize;
+  charTable = malloc(tableSize); 
+  offset    = header->LBApartStart*LBA_SIZE;
   readCharPartTable(charTable, tableSize, deviceFile, offset); 
 
   for(part = 0; part < numParts; part++)
-    charToPartEntry( &(table->entries[part]), charTable, part*singleSize, singleSize);
+    charToPartEntry(&(table->entries[part]), charTable, part*singleSize, singleSize);
 
   return table;
 }
@@ -325,7 +325,7 @@ void writePartTable(struct GPTHeader *header,  uint64_t headerOffset, struct par
   uint32_t crc32Part = crc32PartTable(table);
   uint64_t offset    = header->LBApartStart * LBA_SIZE;
 
-  charTable = (char *)calloc(1, 128*128);
+  charTable = calloc(1, 128*128);
   partTableToChar(charTable, table);
 
   writeCharPartTable(charTable, table->numParts * table->singleSize, deviceFile, offset);
@@ -364,7 +364,7 @@ int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_
       break;
   }
 
-  char *UTF16name = (char *)calloc(1, 72);
+  char *UTF16name = calloc(1, 72);
   int c;
   for(c=0; c<72; c++){
     if(name[c] == '\0'){break;}
@@ -407,7 +407,7 @@ int deletePart( struct partTable *table, char* strGUID)
   for(part=0; part<table->numParts; part++){
     current = &table->entries[part];
     if(uuid_compare(partGUID, current->partGUID) == 0){
-      struct partEntry* new = (struct partEntry*)calloc(1, sizeof(struct partEntry));
+      struct partEntry* new = calloc(1, sizeof(struct partEntry));
       memcpy(current, new, sizeof(struct partEntry)); 
       return 0;
     }
@@ -452,7 +452,7 @@ int verifyPartTable(struct GPTHeader *header, struct partTable *table)
 uint32_t crc32PartTable(struct partTable *table)
 {
   char *charTable;
-  charTable = (char *)calloc(1, 128*128);
+  charTable = calloc(1, 128*128);
   partTableToChar(charTable, table); 
   return crc32(0, (unsigned char*)charTable, 128*128); 
 }

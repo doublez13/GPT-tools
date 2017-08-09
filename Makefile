@@ -11,4 +11,4 @@ libgpt.o: libgpt.c
 	gcc -c -Wall -fpic libgpt.c
 
 clean:
-	rm *.run *.so *.o
+	rm bin/*.run *.so *.o
