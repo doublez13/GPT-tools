@@ -115,7 +115,7 @@ void read_char_partTable(unsigned char *dstHeader, uint64_t tableSize, FILE *dev
 
 void char_to_partEntry(struct partEntry *entry, unsigned char* partTable, uint64_t start, uint32_t length);
 void partEntry_to_char(unsigned char* charTable, struct partEntry *entry, uint64_t start, uint32_t length);
-void partTable_to_char(unsigned char* charTable, struct partTable *table);
+void partTable_to_char(unsigned char* charTable, struct partTable *pt);
 
 
 void write_partTable(struct GPTHeader *header, uint64_t offset, struct partTable *table, FILE *deviceFile);
@@ -133,4 +133,4 @@ void char_to_uuid(uuid_t out, unsigned char* in);
 int delete_part( struct partTable *table, char* strGUID);
 
 int verify_partTable(struct GPTHeader *header, struct partTable *table);
-uint32_t crc32_partTable(struct partTable *table);
+uint32_t crc32_partTable(struct partTable *pt);
