@@ -14,7 +14,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <uuid/uuid.h>
@@ -61,9 +60,9 @@ uint32_t crc32_gpt(struct GPTHeader *header);
 //Populates the GPTHeader struct
 void read_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset);
 
-void read_char_gpt(char *dstHeader, FILE *deviceFile, uint64_t offset);
+void read_char_gpt(unsigned char *dstHeader, FILE *deviceFile, uint64_t offset);
 
-void char_to_gpt_header(struct GPTHeader *dst, char *src);
+void char_to_gpt_header(struct GPTHeader *dst, unsigned char *src);
 
 
 /*
@@ -71,7 +70,7 @@ Write header to disk
 This does not alter the partition table
 Returns 0 on clean write, -1 on failure
 */
-int write_char_gpt(char *srcHeader, FILE *deviceFile, uint64_t offset);
+int write_char_gpt(unsigned char *srcHeader, FILE *deviceFile, uint64_t offset);
 
 /*
 Writes the GPT found in the struct GPTHeader to disk
@@ -80,7 +79,7 @@ Returns 0 on clean write, -1 on failure
 */
 int write_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset);
 
-void gpt_header_to_char(char *dst, struct GPTHeader *src);
+void gpt_header_to_char(unsigned char *dst, struct GPTHeader *src);
 
 
 /*
@@ -112,15 +111,15 @@ struct partEntry{
 };
 
 struct partTable* read_partTable( struct GPTHeader *header, FILE *deviceFile);
-void read_char_partTable(char *dstHeader, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
+void read_char_partTable(unsigned char *dstHeader, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
 
-void char_to_partEntry(struct partEntry *entry, char* partTable, uint64_t start, uint32_t length);
-void partEntry_to_char(char* charTable, struct partEntry *entry, uint64_t start, uint32_t length);
-void partTable_to_char(char* charTable, struct partTable *table);
+void char_to_partEntry(struct partEntry *entry, unsigned char* partTable, uint64_t start, uint32_t length);
+void partEntry_to_char(unsigned char* charTable, struct partEntry *entry, uint64_t start, uint32_t length);
+void partTable_to_char(unsigned char* charTable, struct partTable *table);
 
 
 void write_partTable(struct GPTHeader *header, uint64_t offset, struct partTable *table, FILE *deviceFile);
-void write_char_partTable(char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
+void write_char_partTable(unsigned char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
 
 
 //void createPartTable(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name);

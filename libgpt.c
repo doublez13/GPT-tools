@@ -14,7 +14,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
@@ -95,7 +94,7 @@ int verify_gpt(struct GPTHeader *header)
  */
 uint32_t crc32_gpt(struct GPTHeader *header)
 {
-  char *charHeader;
+  unsigned char *charHeader;
   struct GPTHeader *copyHeader;
   uint32_t crc;
 
@@ -118,7 +117,7 @@ uint32_t crc32_gpt(struct GPTHeader *header)
  */
 void read_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset)
 {
-  char *charHeader = calloc(1, HEADER_SIZE);
+  unsigned char *charHeader = calloc(1, HEADER_SIZE);
   read_char_gpt(charHeader, deviceFile, offset);
   char_to_gpt_header(header, charHeader);
   free(charHeader);
@@ -128,7 +127,7 @@ void read_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset)
 /*
  *
  */
-void read_char_gpt(char *dstHeader, FILE *deviceFile, uint64_t offset)
+void read_char_gpt(unsigned char *dstHeader, FILE *deviceFile, uint64_t offset)
 {
   fseek(deviceFile, offset , SEEK_SET);
   fread(dstHeader, 1, HEADER_SIZE, deviceFile);
@@ -174,7 +173,7 @@ struct GPTHeader *working, struct partTable *workingTable)
  **/
 int write_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset)
 {
-  char* charHeader = calloc(1, HEADER_SIZE);
+  unsigned char* charHeader = calloc(1, HEADER_SIZE);
   int result;
 
   gpt_header_to_char(charHeader, header); 
@@ -189,7 +188,7 @@ int write_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset)
  * This does not alter the partition table
  * Returns 0 on clean write, -1 on failure
  * */
-int write_char_gpt(char *srcHeader, FILE *deviceFile, uint64_t offset)
+int write_char_gpt(unsigned char *srcHeader, FILE *deviceFile, uint64_t offset)
 {
   int written;
   fseek(deviceFile, offset ,SEEK_SET);
@@ -204,7 +203,7 @@ int write_char_gpt(char *srcHeader, FILE *deviceFile, uint64_t offset)
 /*
  *
  */
-void gpt_header_to_char(char *dst, struct GPTHeader *src)
+void gpt_header_to_char(unsigned char *dst, struct GPTHeader *src)
 {
   memcpy(dst +  0, &src->signature,    8);
   memcpy(dst +  8, &src->revision,     4);
@@ -215,7 +214,7 @@ void gpt_header_to_char(char *dst, struct GPTHeader *src)
   memcpy(dst + 32, &src->LBA2,         8);
   memcpy(dst + 40, &src->LBAfirstUse,  8);
   memcpy(dst + 48, &src->LBAlastUse,   8);
-  uuid_to_char((unsigned char*)(dst + 56), (unsigned char*)src->GUID);
+  uuid_to_char((dst + 56), src->GUID);
   memcpy(dst + 72, &src->LBApartStart, 8);
   memcpy(dst + 80, &src->numParts,     4);
   memcpy(dst + 84, &src->singleSize,   4);
@@ -226,7 +225,7 @@ void gpt_header_to_char(char *dst, struct GPTHeader *src)
 /*
  *
  */
-void char_to_gpt_header(struct GPTHeader *dst, char *src)
+void char_to_gpt_header(struct GPTHeader *dst, unsigned char *src)
 {
   memcpy(&dst->signature,    src +  0,  8);
   memcpy(&dst->revision,     src +  8,  4);
@@ -237,7 +236,7 @@ void char_to_gpt_header(struct GPTHeader *dst, char *src)
   memcpy(&dst->LBA2,         src + 32,  8);
   memcpy(&dst->LBAfirstUse,  src + 40,  8);
   memcpy(&dst->LBAlastUse,   src + 48,  8);
-  char_to_uuid((unsigned char*)dst->GUID, (unsigned char*)(src + 56));
+  char_to_uuid(dst->GUID, (src + 56));
   memcpy(&dst->LBApartStart, src + 72,  8);
   memcpy(&dst->numParts,     src + 80,  4);
   memcpy(&dst->singleSize,   src + 84,  4);
@@ -316,7 +315,7 @@ struct partTable* read_partTable(struct GPTHeader *header, FILE *deviceFile)
   uint32_t numParts;   //Number of partition entries. Found in GPT
   uint32_t singleSize; //Size of a single partition entry. Found in GPT
   struct   partTable *table;
-  char*    charTable;
+  unsigned char*    charTable;
   uint64_t offset;
   uint64_t tableSize;
   int      part;
@@ -345,7 +344,7 @@ struct partTable* read_partTable(struct GPTHeader *header, FILE *deviceFile)
  */
 void write_partTable(struct GPTHeader *header,  uint64_t headerOffset, struct partTable *table, FILE *deviceFile)
 {
-  char *charTable;
+  unsigned char *charTable;
   uint32_t crc32Part = crc32_partTable(table);
   uint64_t offset    = header->LBApartStart * LBA_SIZE;
 
@@ -363,7 +362,7 @@ void write_partTable(struct GPTHeader *header,  uint64_t headerOffset, struct pa
 /*
  *
  */
-void read_char_partTable(char *dstTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset)
+void read_char_partTable(unsigned char *dstTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset)
 {
   fseek(deviceFile, offset , SEEK_SET);
   fread(dstTable, 1, tableSize, deviceFile);
@@ -373,7 +372,7 @@ void read_char_partTable(char *dstTable, uint64_t tableSize, FILE *deviceFile, u
 /*
  *
  */
-void write_char_partTable(char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset)
+void write_char_partTable(unsigned char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset)
 {
   fseek(deviceFile, offset , SEEK_SET);
   fwrite(srcTable, 1, tableSize, deviceFile);
@@ -501,8 +500,7 @@ int verify_partTable(struct GPTHeader *header, struct partTable *table)
  */
 uint32_t crc32_partTable(struct partTable *table)
 {
-  char *charTable;
-  charTable = calloc(1, 128*128);
+  unsigned char* charTable = calloc(1, 128*128);
   partTable_to_char(charTable, table); 
   return crc32(0, (unsigned char*)charTable, 128*128); 
 }
@@ -511,23 +509,23 @@ uint32_t crc32_partTable(struct partTable *table)
 /*
  *
  */
-void partTable_to_char(char* charTable, struct partTable *table)
+void partTable_to_char(unsigned char* dst, struct partTable *table)
 {
 uint64_t entNum = 0;
   struct partEntry *entries = table->entries;
   for (entNum=0; entNum < (table->numParts); entNum++)
-    partEntry_to_char(charTable, &(entries[entNum]), 128*entNum, table->singleSize);
+    partEntry_to_char(dst, &(entries[entNum]), 128*entNum, table->singleSize);
 }
 
 
 /*
  *
  */
-void char_to_partEntry(struct partEntry *entry, char* charTable, uint64_t start, uint32_t length)
+void char_to_partEntry(struct partEntry *entry, unsigned char* charTable, uint64_t start, uint32_t length)
 {
   //we're not making use of length right now
-  char_to_uuid((unsigned char*)entry->typeGUID, (unsigned char*)(charTable + start +  0)); 
-  char_to_uuid((unsigned char*)entry->partGUID, (unsigned char*)(charTable + start + 16));
+  char_to_uuid(entry->typeGUID, (charTable + start +  0)); 
+  char_to_uuid(entry->partGUID, (charTable + start + 16));
   memcpy(&entry->firstLBA,  charTable + start + 32,   8);
   memcpy(&entry->lastLBA,   charTable + start + 40,   8);
   memcpy(&entry->flags,     charTable + start + 48,   8);
@@ -538,13 +536,13 @@ void char_to_partEntry(struct partEntry *entry, char* charTable, uint64_t start,
 /*
  *
  */
-void partEntry_to_char(char* charTable, struct partEntry *entry, uint64_t start, uint32_t length)
+void partEntry_to_char(unsigned char* dst, struct partEntry *entry, uint64_t start, uint32_t length)
 {
-  uuid_to_char((unsigned char*)(charTable + start +  0), (unsigned char*)entry->typeGUID);
-  uuid_to_char((unsigned char*)(charTable + start + 16), (unsigned char*)entry->partGUID);
-  memcpy(charTable + start + 32, &entry->firstLBA,   8);
-  memcpy(charTable + start + 40, &entry->lastLBA,    8);
-  memcpy(charTable + start + 48, &entry->flags,      8);
-  memcpy(charTable + start + 56, &entry->name,      72);
+  uuid_to_char((dst + start +  0), entry->typeGUID);
+  uuid_to_char((dst + start + 16), entry->partGUID);
+  memcpy(dst + start + 32, &entry->firstLBA,   8);
+  memcpy(dst + start + 40, &entry->lastLBA,    8);
+  memcpy(dst + start + 48, &entry->flags,      8);
+  memcpy(dst + start + 56, &entry->name,      72);
   //TODO: Fill remaining space (length -128) with zeros
 }
