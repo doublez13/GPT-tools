@@ -190,7 +190,7 @@ int write_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset)
 /*
  * Write header to disk at byte offset
  * This does not alter the partition table
- * Returns 0 on clean write, -1 on failure
+ * Returns 0 on clean write, negative on failure
  * */
 int write_char_gpt(unsigned char *srcHeader, FILE *deviceFile, uint64_t offset)
 {
@@ -441,7 +441,7 @@ int create_part(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64
 }
 
 
-/*
+/* CONVERT THIS TO USE partEntry struct instead of uuid
  *
  */
 int delete_part(struct partTable *table, char* strGUID)
@@ -466,6 +466,50 @@ int delete_part(struct partTable *table, char* strGUID)
    *so nothing else has to be done here!
    */
   return -1;
+}
+
+
+/*
+ *
+ */
+int resize_part(struct partTable *table, struct partEntry* entry, uint64_t endLBA)
+{
+  uint32_t part;
+  struct partEntry *tmp;
+
+  if(endLBA <= entry->firstLBA)
+    return -1;
+
+  for (part = 0; part < table->numParts; part++){
+    tmp = &table->entries[part];
+    if (tmp->firstLBA <= endLBA && endLBA <= tmp->lastLBA)
+      return -1;
+  }
+  //FIGURE OUT WHAT TO DO ABOUT LBA OUTSIDE maxLBA, maybe pass GPT struct?
+  entry->lastLBA = endLBA;
+  
+  return 0;
+}
+
+
+/*
+ *
+ */
+struct partEntry* partEntry_by_uuid(struct partTable *table, char* strGUID)
+{
+  uint32_t part;
+  struct partEntry *current;
+  uuid_t partGUID;
+
+  if (uuid_parse(strGUID, partGUID))
+    return NULL;
+  for (part = 0; part < table->numParts; part++){
+    current = &table->entries[part];
+    if (uuid_compare(partGUID, current->partGUID) == 0){
+      return current;
+    }
+  }
+  return NULL;
 }
 
 

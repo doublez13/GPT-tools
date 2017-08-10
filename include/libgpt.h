@@ -131,6 +131,7 @@ int create_part(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64
 void uuid_to_char(unsigned char* out, uuid_t in);
 void char_to_uuid(uuid_t out, unsigned char* in);
 int delete_part( struct partTable *table, char* strGUID);
+int resize_part(struct partTable *table, struct partEntry *entry, uint64_t endLBA);
 
 int verify_partTable(struct GPTHeader *header, struct partTable *table);
 uint32_t crc32_partTable(struct partTable *pt);
