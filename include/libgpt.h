@@ -42,28 +42,28 @@ Return 1 if the device is GPT
 Return 0 otherwise
 This function checks both the default and backup GPT headers.
 */
-int isGPT(FILE *deviceFile);
+int is_gpt(FILE *deviceFile);
 
 
-uint64_t getPrimaryHeaderOffset();
-uint64_t getSecondaryHeaderOffset(FILE *deviceFile);
+uint64_t get_primary_header_offset();
+uint64_t get_secondary_header_offset(FILE *deviceFile);
 
 
 /*
 Returns 1 if the calculated CRC32 matches the on disk CRC32
 Returns 0 otherwise
 */
-int verifyGPT(struct GPTHeader *header);
+int verify_gpt(struct GPTHeader *header);
 
-uint32_t crc32GPT(struct GPTHeader *header);
+uint32_t crc32_gpt(struct GPTHeader *header);
 
 
 //Populates the GPTHeader struct
-void readGPT(struct GPTHeader *header, FILE *deviceFile, uint64_t offset);
+void read_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset);
 
-void readCharGPT(char *dstHeader, FILE *deviceFile, uint64_t offset);
+void read_char_gpt(char *dstHeader, FILE *deviceFile, uint64_t offset);
 
-void charToGPTHeader(struct GPTHeader *dst, char *src);
+void char_to_gpt_header(struct GPTHeader *dst, char *src);
 
 
 /*
@@ -71,23 +71,23 @@ Write header to disk
 This does not alter the partition table
 Returns 0 on clean write, -1 on failure
 */
-int writeCharGPT(char *srcHeader, FILE *deviceFile, uint64_t offset);
+int write_char_gpt(char *srcHeader, FILE *deviceFile, uint64_t offset);
 
 /*
 Writes the GPT found in the struct GPTHeader to disk
 both primary and backup
 Returns 0 on clean write, -1 on failure
 */
-int writeGPT(struct GPTHeader *header, FILE *deviceFile, uint64_t offset);
+int write_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset);
 
-void GPTHeaderToChar(char *dst, struct GPTHeader *src);
+void gpt_header_to_char(char *dst, struct GPTHeader *src);
 
 
 /*
 Builds a fresh GPTHeader pair
 No Return value
 */
-struct partTable* buildGPT(struct GPTHeader *primary, struct GPTHeader *backup, uint64_t maxLBA);
+struct partTable* build_gpt(struct GPTHeader *primary, struct GPTHeader *backup, uint64_t maxLBA);
 
 
 
@@ -111,27 +111,27 @@ struct partEntry{
   char     name[72]; //UTF-16, Max 36 chars
 };
 
-struct partTable* readPartTable( struct GPTHeader *header, FILE *deviceFile);
-void readCharPartTable(char *dstHeader, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
+struct partTable* read_partTable( struct GPTHeader *header, FILE *deviceFile);
+void read_char_partTable(char *dstHeader, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
 
-void charToPartEntry(struct partEntry *entry, char* partTable, uint64_t start, uint32_t length);
-void partEntryToChar(char* charTable, struct partEntry *entry, uint64_t start, uint32_t length);
-void partTableToChar(char* charTable, struct partTable *table);
+void char_to_partEntry(struct partEntry *entry, char* partTable, uint64_t start, uint32_t length);
+void partEntry_to_char(char* charTable, struct partEntry *entry, uint64_t start, uint32_t length);
+void partTable_to_char(char* charTable, struct partTable *table);
 
 
-void writePartTable(struct GPTHeader *header, uint64_t offset, struct partTable *table, FILE *deviceFile);
-void writeCharPartTable(char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
+void write_partTable(struct GPTHeader *header, uint64_t offset, struct partTable *table, FILE *deviceFile);
+void write_char_partTable(char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
 
 
 //void createPartTable(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name);
 
-void genHeaderFromBackup(struct GPTHeader *new ,struct partTable *newTable,
+void header_from_backup(struct GPTHeader *new ,struct partTable *newTable,
 struct GPTHeader *working, struct partTable *workingTable);
 
-int createPart(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name);
+int create_part(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name);
 void uuid_to_char(unsigned char* out, uuid_t in);
 void char_to_uuid(uuid_t out, unsigned char* in);
-int deletePart( struct partTable *table, char* strGUID);
+int delete_part( struct partTable *table, char* strGUID);
 
-int verifyPartTable(struct GPTHeader *header, struct partTable *table);
-uint32_t crc32PartTable(struct partTable *table);
+int verify_partTable(struct GPTHeader *header, struct partTable *table);
+uint32_t crc32_partTable(struct partTable *table);
