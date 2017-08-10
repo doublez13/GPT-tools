@@ -46,11 +46,11 @@ int main(){
   struct GPTHeader *GPTHeader2 = calloc(1,sizeof(struct GPTHeader));
   read_gpt( GPTHeader1, deviceFile, get_primary_header_offset() );
   read_gpt( GPTHeader2, deviceFile, get_secondary_header_offset(deviceFile) ); 
-  if( !verify_gpt(GPTHeader1) ){
+  if( verify_gpt(GPTHeader1) ){
     printf("Test 01: Primary header corrupted\n");
     return 0;
   }
-  if( !verify_gpt(GPTHeader2) ){
+  if( verify_gpt(GPTHeader2) ){
     printf("Test 01: Secondary header corrupted\n");
     return 0;
   }
@@ -68,11 +68,11 @@ int main(){
   GPTHeader2 = calloc(1,sizeof(struct GPTHeader));
   read_gpt(GPTHeader1, deviceFile, get_primary_header_offset() );
   read_gpt(GPTHeader2, deviceFile, get_secondary_header_offset(deviceFile) );
-  if( !verify_gpt(GPTHeader1) ){
+  if( verify_gpt(GPTHeader1) ){
     printf("Test 02: Primary header corrupted\n");
     return 0;
   }
-  if( !verify_gpt(GPTHeader2) ){
+  if( verify_gpt(GPTHeader2) ){
     printf("Test 02: Secondary header corrupted\n");
     return 0;
   }
@@ -90,12 +90,12 @@ int main(){
   read_gpt(GPTHeader1, deviceFile, get_primary_header_offset() );
   read_gpt(GPTHeader2, deviceFile, get_secondary_header_offset(deviceFile) );
   struct partTable* partTable1 = read_partTable( GPTHeader1, deviceFile);
-  if( !verify_partTable(GPTHeader1, partTable1) ){
+  if( verify_partTable(GPTHeader1, partTable1) ){
     printf("Test 03: Primary Part Table corrupted\n");
     return 0;
   }
   struct partTable* partTable2 = read_partTable( GPTHeader2, deviceFile);
-  if( !verify_partTable(GPTHeader2, partTable2) ){
+  if( verify_partTable(GPTHeader2, partTable2) ){
     printf("Test 03: Secondary Part Table corrupted\n");
     return 0;
   }
@@ -130,7 +130,7 @@ int main(){
   free(GPTHeader2);
   GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
   read_gpt(GPTHeader1, deviceFile, get_primary_header_offset() );
-  if( !verify_gpt(GPTHeader1) ){
+  if( verify_gpt(GPTHeader1) ){
     printf("Test 05: Primary header could not be repaired\n");
     return 0;
   } 
@@ -149,7 +149,7 @@ int main(){
   GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
   GPTHeader2 = calloc(1,sizeof(struct GPTHeader));
   read_gpt(GPTHeader1, deviceFile, get_primary_header_offset() );
-  if( !verify_gpt(GPTHeader1) ){
+  if( verify_gpt(GPTHeader1) ){
     printf("Test 06: We've corrupted the primary GPT header AND the primary part table\n");
   }
 
@@ -164,11 +164,11 @@ int main(){
   GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
   read_gpt(GPTHeader1, deviceFile, get_primary_header_offset() );
   partTable1 = read_partTable( GPTHeader1, deviceFile);
-  if( !verify_gpt(GPTHeader1) ){
+  if( verify_gpt(GPTHeader1) ){
     printf("Test 06: Primary header could not be repaired\n");
     return 0;
   }
-  if( !verify_partTable(GPTHeader1, partTable1) ){
+  if( verify_partTable(GPTHeader1, partTable1) ){
     printf("Test 06: Primary partition table could not be repaired\n");
     return 0;
   }

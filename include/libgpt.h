@@ -58,9 +58,9 @@ uint32_t crc32_gpt(struct GPTHeader *header);
 
 
 //Populates the GPTHeader struct
-void read_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset);
+int read_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset);
 
-void read_char_gpt(unsigned char *dstHeader, FILE *deviceFile, uint64_t offset);
+int read_char_gpt(unsigned char *dstHeader, FILE *deviceFile, uint64_t offset);
 
 void char_to_gpt_header(struct GPTHeader *dst, unsigned char *src);
 
@@ -111,21 +111,21 @@ struct partEntry{
 };
 
 struct partTable* read_partTable( struct GPTHeader *header, FILE *deviceFile);
-void read_char_partTable(unsigned char *dstHeader, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
+int read_char_partTable(unsigned char *dstHeader, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
 
 void char_to_partEntry(struct partEntry *entry, unsigned char* partTable, uint64_t start, uint32_t length);
 void partEntry_to_char(unsigned char* charTable, struct partEntry *entry, uint64_t start, uint32_t length);
 void partTable_to_char(unsigned char* charTable, struct partTable *pt);
 
 
-void write_partTable(struct GPTHeader *header, uint64_t offset, struct partTable *table, FILE *deviceFile);
-void write_char_partTable(unsigned char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
+int write_partTable(struct GPTHeader *header, uint64_t offset, struct partTable *table, FILE *deviceFile);
+int write_char_partTable(unsigned char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset);
 
 
 //void createPartTable(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name);
 
 void header_from_backup(struct GPTHeader *new ,struct partTable *newTable,
-struct GPTHeader *working, struct partTable *workingTable);
+                        struct GPTHeader *working, struct partTable *workingTable);
 
 int create_part(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name);
 void uuid_to_char(unsigned char* out, uuid_t in);

@@ -80,12 +80,12 @@ uint64_t get_secondary_header_offset(FILE *deviceFile)
 
 
 /*
-Returns 1 if the calculated CRC32 matches the on disk CRC32
-Returns 0 otherwise
+Returns 0 if the calculated CRC32 matches the on disk CRC32
+Returns 1 otherwise
 */
 int verify_gpt(struct GPTHeader *header)
 {
-  return header->crc32 == crc32_gpt(header);
+  return header->crc32 != crc32_gpt(header);
 }
 
 
@@ -103,7 +103,7 @@ uint32_t crc32_gpt(struct GPTHeader *header)
   copyHeader->crc32 = 0;
   charHeader = calloc(1, 92);
   gpt_header_to_char(charHeader, copyHeader);
-  crc = crc32(0, (unsigned char*)charHeader, 92);
+  crc = crc32(0, charHeader, 92);
 
   free(charHeader);
   free(copyHeader);
@@ -115,22 +115,25 @@ uint32_t crc32_gpt(struct GPTHeader *header)
  *Populates header with the GPT header found in deviceFile at offset
  *
  */
-void read_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset)
+int read_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset)
 {
   unsigned char *charHeader = calloc(1, HEADER_SIZE);
-  read_char_gpt(charHeader, deviceFile, offset);
+  if (read_char_gpt(charHeader, deviceFile, offset))
+    return -1;
   char_to_gpt_header(header, charHeader);
+  
   free(charHeader);
+  return 0;
 }
 
 
 /*
  *
  */
-void read_char_gpt(unsigned char *dstHeader, FILE *deviceFile, uint64_t offset)
+int read_char_gpt(unsigned char *dstHeader, FILE *deviceFile, uint64_t offset)
 {
   fseek(deviceFile, offset , SEEK_SET);
-  fread(dstHeader, 1, HEADER_SIZE, deviceFile);
+  return fread(dstHeader, 1, HEADER_SIZE, deviceFile) - HEADER_SIZE;
 }
 
 
@@ -138,7 +141,7 @@ void read_char_gpt(unsigned char *dstHeader, FILE *deviceFile, uint64_t offset)
  *
  */
 void header_from_backup(struct GPTHeader *new ,struct partTable *newTable, 
-struct GPTHeader *working, struct partTable *workingTable)
+                        struct GPTHeader *working, struct partTable *workingTable)
 {
   uint64_t LBApartStart = 2;
   if (working->LBA1 == 1)
@@ -178,6 +181,7 @@ int write_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset)
 
   gpt_header_to_char(charHeader, header); 
   result = write_char_gpt(charHeader, deviceFile, offset);
+  
   free(charHeader);
   return result;
 }
@@ -190,18 +194,16 @@ int write_gpt(struct GPTHeader *header, FILE *deviceFile, uint64_t offset)
  * */
 int write_char_gpt(unsigned char *srcHeader, FILE *deviceFile, uint64_t offset)
 {
-  int written;
   fseek(deviceFile, offset ,SEEK_SET);
-  written = fwrite(srcHeader, 1, HEADER_SIZE, deviceFile);
-
-  if (written == HEADER_SIZE) //return written-HEADER_SIZE
-    return 0;
-  return -1;
+  return fwrite(srcHeader, 1, HEADER_SIZE, deviceFile) - HEADER_SIZE;
 }
 
 
 /*
+ * Converts the GPTHeader struct into an unsigned char array
+ * ready to be written to disk.
  *
+ * NOTE: This function needs to take endianness into account.
  */
 void gpt_header_to_char(unsigned char *dst, struct GPTHeader *src)
 {
@@ -223,7 +225,9 @@ void gpt_header_to_char(unsigned char *dst, struct GPTHeader *src)
 
 
 /*
+ *Converts the unsigned char arry into a GPTHeader struct.
  *
+ * NOTE: This function needs to take endianness into account.
  */
 void char_to_gpt_header(struct GPTHeader *dst, unsigned char *src)
 {
@@ -245,24 +249,23 @@ void char_to_gpt_header(struct GPTHeader *dst, unsigned char *src)
 
 
 /*
- *Builds a fresh GPTHeader pair and partition table
- *No Return value
- *maxLBA exclusive
+ * Builds a fresh GPTHeader pair and partition table
+ * maxLBA exclusive
  */
 struct partTable* build_gpt(struct GPTHeader *primary, struct GPTHeader *backup, uint64_t maxLBA)
 {
-  uint32_t numParts    = 128;
-  uint32_t singleSize  = 128;
+  uint32_t numParts    = 128; //Generally the default
+  uint32_t singleSize  = 128; //Generally the default
   char revision[4]     = {0x00, 0x00, 0x01, 0x00};
   uuid_t partGUID;
   struct partTable *pt = calloc(1, sizeof(struct partTable));
-  pt->entries          = calloc(1, numParts*sizeof(struct partEntry)); 
+  pt->entries          = calloc(1, numParts * sizeof(struct partEntry)); 
 
   strcpy(primary->signature, EFI_SIG);
   strcpy(backup->signature,  EFI_SIG);
   
   memcpy(primary->revision, revision, 4);
-  memcpy(primary->revision, revision, 4);  
+  memcpy(backup->revision, revision, 4);  
 
   primary->headerSize   = 92;   //92 in most cases. 512-92 is just 0s
   backup->headerSize    = primary->headerSize;
@@ -330,7 +333,8 @@ struct partTable* read_partTable(struct GPTHeader *header, FILE *deviceFile)
   tableSize = numParts * singleSize;
   charTable = malloc(tableSize); 
   offset    = header->LBApartStart * LBA_SIZE;
-  read_char_partTable(charTable, tableSize, deviceFile, offset); 
+  if (read_char_partTable(charTable, tableSize, deviceFile, offset))
+    return NULL;
 
   for (part = 0; part < numParts; part++)
     char_to_partEntry(&(table->entries[part]), charTable, part*singleSize, singleSize);
@@ -343,7 +347,7 @@ struct partTable* read_partTable(struct GPTHeader *header, FILE *deviceFile)
 /*
  *
  */
-void write_partTable(struct GPTHeader *header,  uint64_t headerOffset, struct partTable *pt, FILE *deviceFile)
+int write_partTable(struct GPTHeader *header,  uint64_t headerOffset, struct partTable *pt, FILE *deviceFile)
 {
   unsigned char *charTable;
   uint32_t crc32Part = crc32_partTable(pt);
@@ -352,33 +356,36 @@ void write_partTable(struct GPTHeader *header,  uint64_t headerOffset, struct pa
   charTable = calloc(1, pt->numParts * pt->singleSize);
   partTable_to_char(charTable, pt);
 
-  write_char_partTable(charTable, pt->numParts * pt->singleSize, deviceFile, offset);
+  if (write_char_partTable(charTable, pt->numParts * pt->singleSize, deviceFile, offset))
+    return -1;
   header->crc32Part = crc32Part;
 
   header->crc32 = crc32_gpt(header);
-  write_gpt(header, deviceFile, headerOffset);
-  
+  if (write_gpt(header, deviceFile, headerOffset))
+    return -1;
+
   free(charTable);
+  return 0;
 }
 
 
 /*
  *
  */
-void read_char_partTable(unsigned char *dstTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset)
+int read_char_partTable(unsigned char *dstTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset)
 {
   fseek(deviceFile, offset , SEEK_SET);
-  fread(dstTable, 1, tableSize, deviceFile);
+  return fread(dstTable, 1, tableSize, deviceFile) - tableSize;
 }
 
 
 /*
  *
  */
-void write_char_partTable(unsigned char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset)
+int write_char_partTable(unsigned char *srcTable, uint64_t tableSize, FILE *deviceFile, uint64_t offset)
 {
   fseek(deviceFile, offset , SEEK_SET);
-  fwrite(srcTable, 1, tableSize, deviceFile);
+  return fwrite(srcTable, 1, tableSize, deviceFile) - tableSize;
 }
 
 
@@ -494,12 +501,12 @@ void char_to_uuid(uuid_t out, unsigned char* in)
 
 
 /*
- *Returns 1 iff the partTable is crc matches
- *Returns 0 otherwise
+ *Returns 0 iff the partTable is crc matches
+ *Returns 1 otherwise
  */
 int verify_partTable(struct GPTHeader *header, struct partTable *table)
 {
-  return header->crc32Part == crc32_partTable(table);
+  return header->crc32Part != crc32_partTable(table);
 }
 
 
