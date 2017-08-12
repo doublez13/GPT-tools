@@ -388,6 +388,26 @@ int write_char_partTable(unsigned char *srcTable, uint64_t tableSize, FILE *devi
   return fwrite(srcTable, 1, tableSize, deviceFile) - tableSize;
 }
 
+/*
+ *
+ */
+/*
+uint64_t find_best_fit(struct partTable *table, uint64_t LBAs)
+{
+  uint32_t numParts;
+  uint32_t part;
+  struct partEntry *newPart;
+  struct partEntry *tmp;
+  uint64_t bestSize, bestLBA;
+  
+  for (part = 0; part < numParts; part++){
+    temp = &table->entries[partNum];
+    if ()
+      break;
+  }
+  
+}
+*/
 
 /*
  *
@@ -396,7 +416,9 @@ int create_part(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64
 {
   uint32_t numParts;   //Number of partition entries. Found in GPT
   uint32_t partNum;
+  uint32_t part;
   struct partEntry *newPart;
+  struct partEntry *tmp;
   uint8_t  nameLimit = 72;
   numParts = table->numParts;
   
@@ -406,6 +428,13 @@ int create_part(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64
     if ((newPart->firstLBA | newPart->lastLBA | newPart->flags) == 0)
       break;
   }
+ 
+  //Make this into a helper function
+  for (part = 0; part < table->numParts; part++){
+    tmp = &table->entries[part];
+    if (tmp->firstLBA <= endLBA && endLBA <= tmp->lastLBA)
+      return -1;
+  }
 
   char *UTF16name = calloc(1, nameLimit);
   int c;
@@ -413,7 +442,7 @@ int create_part(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64
     if (name[c] == '\0')
       break;
     UTF16name[2*c] = name[c];
-  }
+  }  
 
   /*
    * I was hoping that TT's libuuid had all the uuid manipulating power
@@ -441,31 +470,20 @@ int create_part(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64
 }
 
 
-/* CONVERT THIS TO USE partEntry struct instead of uuid
+/*
  *
  */
-int delete_part(struct partTable *table, char* strGUID)
+int delete_part(struct partEntry* entry)
 {
-  uint32_t part;
-  struct partEntry *current, *blank;
-  uuid_t partGUID;
+  //Maybe we should guarantee that entry is a pointer to a part
+  //in the partTable
+  struct partEntry *blank;
 
-  if (uuid_parse(strGUID, partGUID))
-    return -1;
-  for (part = 0; part < table->numParts; part++){
-    current = &table->entries[part];
-    if (uuid_compare(partGUID, current->partGUID) == 0){
-      blank = calloc(1, sizeof(struct partEntry));
-      memcpy(current, blank, sizeof(struct partEntry));
+  blank = calloc(1, sizeof(struct partEntry));
+  memcpy(entry, blank, sizeof(struct partEntry));
 
-      free(blank);
-      return 0;
-    }
-  }
-  /*We calculate the crc32 of the part when we write it to disk,
-   *so nothing else has to be done here!
-   */
-  return -1;
+  free(blank);
+  return 0;
 }
 
 
@@ -474,6 +492,9 @@ int delete_part(struct partTable *table, char* strGUID)
  */
 int resize_part(struct partTable *table, struct partEntry* entry, uint64_t endLBA)
 {
+  //Maybe we should guarantee that entry is a pointer to a part
+  //  //in the partTable
+  //
   uint32_t part;
   struct partEntry *tmp;
 

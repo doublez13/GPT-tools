@@ -130,7 +130,7 @@ void header_from_backup(struct GPTHeader *new ,struct partTable *newTable,
 int create_part(struct partTable *table, uint64_t stLBA, uint64_t endLBA, uint64_t flags, char *name);
 void uuid_to_char(unsigned char* out, uuid_t in);
 void char_to_uuid(uuid_t out, unsigned char* in);
-int delete_part( struct partTable *table, char* strGUID);
+int delete_part(struct partEntry *entry);
 int resize_part(struct partTable *table, struct partEntry *entry, uint64_t endLBA);
 
 int verify_partTable(struct GPTHeader *header, struct partTable *table);
