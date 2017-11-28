@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
-#include "include/libgpt.h"
+#include "libgpt.h"
 
 int main(){
   FILE *deviceFile;
@@ -194,7 +194,7 @@ int main(){
   free(GPTHeader2);
 
 
-
+/*
   printf("Test 08: Deleting the Partition\n");
   GPTHeader1 = calloc(1,sizeof(struct GPTHeader));
   GPTHeader2 = calloc(1,sizeof(struct GPTHeader));
@@ -216,4 +216,11 @@ int main(){
   fclose(deviceFile);
   printf("ALL TESTS PASSED\n");
   return 0;
+*/
+
+
+
+
+
+  return 1;
 }
